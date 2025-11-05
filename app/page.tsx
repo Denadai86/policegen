@@ -1,4 +1,4 @@
-'use client'; // Indica que este é um Componente Cliente, necessário para usar hooks como useState
+'use client'; 
 
 import { useState } from 'react';
 
@@ -17,13 +17,18 @@ const languageOptions = [
 
 // Definição do tipo para os dados do formulário (FormData)
 interface FormData {
+  // ETAPA 1
   nomeDoProjeto: string;
   linguagem: string; 
-  // CAMPOS DA ETAPA 2:
+  // ETAPA 2
   coletaDadosPessoais: boolean; 
   coletaDadosSensivel: boolean; 
   monetizacaoPorTerceiros: boolean; 
   publicoAlvoCriancas: boolean; 
+  // ETAPA 3
+  licencaCodigo: 'mit' | 'gpl3' | 'proprietaria' | ''; 
+  modeloSoftware: 'saas' | 'open_source' | '';
+  tipoMonetizacao: 'gratuito' | 'freemium' | 'pago' | ''; 
 }
 
 // --- 2. COMPONENTE AUXILIAR PARA CHECKBOX (Sim/Não) ---
@@ -32,6 +37,7 @@ interface QuestionCheckboxProps {
   label: string;
   name: keyof FormData; 
   checked: boolean;
+  // A função de callback espera apenas um booleano como valor
   onChange: (field: keyof FormData, value: boolean) => void;
 }
 
@@ -57,18 +63,21 @@ const QuestionCheckbox: React.FC<QuestionCheckboxProps> = ({ label, name, checke
 // --- 3. O COMPONENTE PRINCIPAL DO FORMULÁRIO ---
 
 export default function PolicyGenPage() {
+  const totalSteps = 4;
   const [currentStep, setCurrentStep] = useState(1);
+  
   const [formData, setFormData] = useState<FormData>({
+    // Valores Iniciais
     nomeDoProjeto: '',
     linguagem: '',
-    // Valores Iniciais da Etapa 2:
     coletaDadosPessoais: false,
     coletaDadosSensivel: false,
     monetizacaoPorTerceiros: false,
     publicoAlvoCriancas: false,
+    licencaCodigo: '',
+    modeloSoftware: '',
+    tipoMonetizacao: '',
   });
-
-  const totalSteps = 4; 
 
   // Função para avançar/voltar no formulário
   const nextStep = () => {
@@ -144,12 +153,13 @@ export default function PolicyGenPage() {
         return (
           <div>
             <h2 className="text-2xl font-bold mb-4">Etapa 2: Escopo do Serviço e Dados</h2>
-            <p className="text-gray-600 mb-6">Por favor, responda se o seu projeto realiza as seguintes atividades. (Escolha Sim ou Não para cada item).</p>
+            <p className="text-gray-600 mb-6">Por favor, responda se o seu projeto realiza as seguintes atividades.</p>
 
             <QuestionCheckbox
               label="1. O projeto armazena dados de identificação pessoal? (Nome, E-mail, IP, Cookies, CPF, etc.)"
               name="coletaDadosPessoais"
               checked={formData.coletaDadosPessoais}
+              // Cast necessário pois QuestionCheckbox espera um callback de 'boolean'
               onChange={updateFormData as (field: keyof FormData, value: boolean) => void}
             />
 
@@ -176,13 +186,65 @@ export default function PolicyGenPage() {
           </div>
         );
 
-      // --- ETAPA 3: A SER DESENVOLVIDA ---
+      // --- ETAPA 3: TERMOS DE USO E LICENÇA ---
       case 3:
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-4">Etapa 3: Termos de Uso e Licença (Próximo Foco)</h2>
-            <p className="text-gray-600 mb-6">Esta etapa será o nosso próximo objetivo de programação.</p>
-            {/* Aqui virão os campos da Etapa 3 */}
+            <h2 className="text-2xl font-bold mb-4">Etapa 3: Termos de Uso e Licença</h2>
+            <p className="text-gray-600 mb-6">Defina as condições de uso e o modelo de licenciamento do seu software.</p>
+            
+            {/* Pergunta 1: Licença de Código */}
+            <div className="mb-4">
+              <label htmlFor="licencaCodigo" className="block text-sm font-medium text-gray-700 mb-1">
+                1. Qual licença se aplica ao código-fonte do projeto?
+              </label>
+              <select
+                id="licencaCodigo"
+                value={formData.licencaCodigo}
+                onChange={(e) => updateFormData('licencaCodigo', e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
+              >
+                <option value="">Selecione a Licença</option>
+                <option value="mit">MIT (Permissiva, muito comum para Open Source)</option>
+                <option value="gpl3">GPL v3 (Forte copyleft, exige que modificações sejam abertas)</option>
+                <option value="proprietaria">Proprietária (Código fechado, uso restrito - comum em SaaS)</option>
+              </select>
+            </div>
+
+            {/* Pergunta 2: Modelo de Software */}
+            <div className="mb-4">
+              <label htmlFor="modeloSoftware" className="block text-sm font-medium text-gray-700 mb-1">
+                2. Qual o modelo de distribuição do software?
+              </label>
+              <select
+                id="modeloSoftware"
+                value={formData.modeloSoftware}
+                onChange={(e) => updateFormData('modeloSoftware', e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
+              >
+                <option value="">Selecione o Modelo</option>
+                <option value="saas">SaaS (Software como Serviço, acesso via web/API)</option>
+                <option value="open_source">Open Source Distribuído (Software instalado localmente/server próprio)</option>
+              </select>
+            </div>
+
+            {/* Pergunta 3: Monetização */}
+            <div className="mb-4">
+              <label htmlFor="tipoMonetizacao" className="block text-sm font-medium text-gray-700 mb-1">
+                3. O PolicyGen será monetizado de que forma?
+              </label>
+              <select
+                id="tipoMonetizacao"
+                value={formData.tipoMonetizacao}
+                onChange={(e) => updateFormData('tipoMonetizacao', e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
+              >
+                <option value="">Selecione o Tipo</option>
+                <option value="gratuito">Gratuito (Sem custos futuros)</option>
+                <option value="freemium">Freemium (Versão gratuita + recursos pagos)</option>
+                <option value="pago">Pago (Assinatura ou Compra Única)</option>
+              </select>
+            </div>
           </div>
         );
 
@@ -193,18 +255,24 @@ export default function PolicyGenPage() {
             <h2 className="text-2xl font-bold mb-4">Etapa Final: Revisão e Geração</h2>
             <p className="text-gray-600 mb-6">Confira suas respostas e gere sua política.</p>
             <div className="bg-gray-100 p-4 rounded-md">
-              <h3 className="font-bold border-b pb-1 mb-2">Resumo:</h3>
+              <h3 className="font-bold border-b pb-1 mb-2">Resumo (Etapa 1):</h3>
               <p>
                 **Nome do Projeto:** {formData.nomeDoProjeto || 'Não fornecido'}
               </p>
               <p>
                 **Linguagem:** {languageOptions.find(opt => opt.value === formData.linguagem)?.label || 'Não fornecida'}
               </p>
-              <h3 className="font-bold border-b pt-3 pb-1 mb-2">Impacto Legal:</h3>
+
+              <h3 className="font-bold border-b pt-3 pb-1 mb-2">Impacto Legal (Etapa 2):</h3>
               <p>Coleta Dados Pessoais: **{formData.coletaDadosPessoais ? 'SIM' : 'NÃO'}**</p>
               <p>Coleta Dados Sensíveis: **{formData.coletaDadosSensivel ? 'SIM' : 'NÃO'}**</p>
               <p>Usa Terceiros (Ads/Analytics): **{formData.monetizacaoPorTerceiros ? 'SIM' : 'NÃO'}**</p>
               <p>Público Crianças: **{formData.publicoAlvoCriancas ? 'SIM' : 'NÃO'}**</p>
+
+              <h3 className="font-bold border-b pt-3 pb-1 mb-2">Termos e Licença (Etapa 3):</h3>
+              <p>Licença de Código: **{formData.licencaCodigo || 'Não Informado'}**</p>
+              <p>Modelo Software: **{formData.modeloSoftware || 'Não Informado'}**</p>
+              <p>Tipo Monetização: **{formData.tipoMonetizacao || 'Não Informado'}**</p>
             </div>
             <button
               onClick={() => alert('Política Gerada!')}
