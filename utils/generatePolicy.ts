@@ -1,6 +1,7 @@
 // Define a interface para garantir que a função generatePolicy receba os dados corretos.
 export interface FormData {
     nomeDoProjeto: string;
+    nomeDoResponsavel: string;
     linguagem: string; 
     coletaDadosPessoais: boolean; 
     coletaDadosSensivel: boolean; 
@@ -20,6 +21,7 @@ export function generatePolicy(data: FormData): string {
 
     // --- SEÇÃO 1: INTRODUÇÃO E ESCOPO ---
     policyParts.push(`# 📜 Política de Uso e Privacidade para ${data.nomeDoProjeto}`);
+    policyParts.push(`\n**Responsável Legal (Controlador):** ${data.nomeDoResponsavel}`);
     policyParts.push(`\n**Data de Vigência:** ${new Date().toLocaleDateString('pt-BR')}`);
     policyParts.push(`\nEsta política detalha as regras para o uso do software **${data.nomeDoProjeto}**, desenvolvido usando **${data.linguagem || 'tecnologia não especificada'}**. Este é um documento preliminar gerado automaticamente.`);
     

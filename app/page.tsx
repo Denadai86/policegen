@@ -54,6 +54,7 @@ export default function PolicyGenPage() {
   const [formData, setFormData] = useState<FormData>({
     // Valores Iniciais
     nomeDoProjeto: '',
+    nomeDoResponsavel: '', // NOVO CAMPO
     linguagem: '',
     coletaDadosPessoais: false,
     coletaDadosSensivel: false,
@@ -65,30 +66,65 @@ export default function PolicyGenPage() {
     jurisdicao: '', 
   });
 
-  const nextStep = () => {
-    setGeneratedPolicy(''); 
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-     setGeneratedPolicy('');
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
   const updateFormData = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
   };
-
+  
+  // Função de Geração
   const handleGenerate = () => {
     const policyText = generatePolicy(formData); 
     setGeneratedPolicy(policyText);
+  };
+  
+  // Função de Navegação com Validação
+  const nextStep = () => {
+    setGeneratedPolicy(''); 
+
+    let isValid = true;
+    let message = '';
+
+    // --- Lógica de Validação por Etapa ---
+    switch (currentStep) {
+      case 1:
+        // VALIDAÇÃO ATUALIZADA (Nome do Responsável adicionado)
+        if (!formData.nomeDoProjeto.trim() || !formData.linguagem || !formData.nomeDoResponsavel.trim()) {
+          isValid = false;
+          message = 'Por favor, preencha o Nome do Projeto, o Responsável Legal e selecione a Linguagem/Tecnologia.';
+        }
+        break;
+      case 2:
+        if (!formData.jurisdicao) {
+          isValid = false;
+          message = 'Por favor, selecione o Território de Aplicação Legal (Jurisdição).';
+        }
+        break;
+      case 3:
+        if (!formData.licencaCodigo || !formData.modeloSoftware || !formData.tipoMonetizacao) {
+          isValid = false;
+          message = 'Por favor, selecione todas as opções de Licença, Modelo e Monetização.';
+        }
+        break;
+      default:
+        break;
+    }
+
+    if (isValid) {
+      if (currentStep < totalSteps) {
+        setCurrentStep(currentStep + 1);
+      }
+    } else {
+      alert(`⚠️ Erro de Validação:\n${message}`);
+    }
+  };
+
+  const prevStep = () => {
+    setGeneratedPolicy('');
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
 
@@ -100,8 +136,8 @@ export default function PolicyGenPage() {
       case 1:
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-4">Etapa 1: Informações Básicas</h2>
-            <p className="text-gray-600 mb-6">Qual o nome do seu projeto e qual a linguagem principal?</p>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Etapa 1: Informações Básicas</h2> {/* CORREÇÃO DE CONTRASTE */}
+            <p className="text-gray-600 mb-6">Qual o nome do seu projeto e o responsável legal?</p>
             
             {/* Campo Nome do Projeto */}
             <div className="mb-4">
@@ -115,6 +151,21 @@ export default function PolicyGenPage() {
                 onChange={(e) => updateFormData('nomeDoProjeto', e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
                 placeholder="Ex: PolicyGen SaaS"
+              />
+            </div>
+            
+            {/* Campo Nome do Responsável/Controlador (NOVO) */}
+            <div className="mb-4">
+              <label htmlFor="nomeDoResponsavel" className="block text-sm font-medium text-gray-700">
+                Nome do Responsável Legal (Controlador de Dados)
+              </label>
+              <input
+                type="text"
+                id="nomeDoResponsavel"
+                value={formData.nomeDoResponsavel}
+                onChange={(e) => updateFormData('nomeDoResponsavel', e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
+                placeholder="Ex: João da Silva"
               />
             </div>
 
@@ -144,7 +195,7 @@ export default function PolicyGenPage() {
       case 2:
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-4">Etapa 2: Escopo Legal e de Dados</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Etapa 2: Escopo Legal e de Dados</h2> {/* CORREÇÃO DE CONTRASTE */}
             <p className="text-gray-600 mb-6">Por favor, responda se o seu projeto realiza as seguintes atividades.</p>
 
             <QuestionCheckbox
@@ -201,7 +252,7 @@ export default function PolicyGenPage() {
       case 3:
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-4">Etapa 3: Termos de Uso e Licença</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Etapa 3: Termos de Uso e Licença</h2> {/* CORREÇÃO DE CONTRASTE */}
             <p className="text-gray-600 mb-6">Defina as condições de uso e o modelo de licenciamento do seu software.</p>
             
             {/* Pergunta 1: Licença de Código */}
@@ -281,12 +332,15 @@ export default function PolicyGenPage() {
 
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-4">Etapa Final: Revisão e Geração</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Etapa Final: Revisão e Geração</h2> {/* CORREÇÃO DE CONTRASTE */}
             <p className="text-gray-600 mb-6">Confira suas respostas e clique para gerar o documento final.</p>
-            <div className="bg-gray-100 p-4 rounded-md">
+            <div className="bg-gray-100 p-4 rounded-md text-gray-700"> {/* CORREÇÃO DE CONTRASTE APLICADA AQUI */}
               <h3 className="font-bold border-b pb-1 mb-2">Resumo (Etapa 1):</h3>
               <p>
                 **Nome do Projeto:** {formData.nomeDoProjeto || 'Não fornecido'}
+              </p>
+              <p>
+                **Responsável Legal:** {formData.nomeDoResponsavel || 'Não fornecido'} {/* NOVO ITEM NO RESUMO */}
               </p>
               <p>
                 **Linguagem:** {languageOptions.find(opt => opt.value === formData.linguagem)?.label || 'Não fornecida'}
@@ -297,7 +351,7 @@ export default function PolicyGenPage() {
               <p>Coleta Dados Sensíveis: **{formData.coletaDadosSensivel ? 'SIM' : 'NÃO'}**</p>
               <p>Usa Terceiros (Ads/Analytics): **{formData.monetizacaoPorTerceiros ? 'SIM' : 'NÃO'}**</p>
               <p>Público Crianças: **{formData.publicoAlvoCriancas ? 'SIM' : 'NÃO'}**</p>
-              <p>Jurisdição Principal: **{formData.jurisdicao || 'Não Informado'}**</p>
+              <p>Jurisdição Principal: **{formData.jurisdicao || 'Não Informado'}**</p> 
 
               <h3 className="font-bold border-b pt-3 pb-1 mb-2">Termos e Licença (Etapa 3):</h3>
               <p>Licença de Código: **{formData.licencaCodigo || 'Não Informado'}**</p>
