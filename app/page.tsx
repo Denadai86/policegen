@@ -49,7 +49,7 @@ const QuestionCheckbox: React.FC<QuestionCheckboxProps> = ({ label, name, checke
 export default function PolicyGenPage() {
   const totalSteps = 4;
   const [currentStep, setCurrentStep] = useState(1);
-  const [generatedPolicy, setGeneratedPolicy] = useState(''); // NOVO ESTADO para o resultado
+  const [generatedPolicy, setGeneratedPolicy] = useState(''); // Estado para o resultado
   
   const [formData, setFormData] = useState<FormData>({
     // Valores Iniciais
@@ -62,11 +62,10 @@ export default function PolicyGenPage() {
     licencaCodigo: '',
     modeloSoftware: '',
     tipoMonetizacao: '',
+    jurisdicao: '', 
   });
 
-  // Função para avançar/voltar no formulário
   const nextStep = () => {
-    // Reseta o documento gerado se o usuário voltar
     setGeneratedPolicy(''); 
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
@@ -80,7 +79,6 @@ export default function PolicyGenPage() {
     }
   };
 
-  // Função para atualizar os dados do formulário (Aceita string OU boolean)
   const updateFormData = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
@@ -88,9 +86,7 @@ export default function PolicyGenPage() {
     }));
   };
 
-  // Funçao que chama o motor de geracao
   const handleGenerate = () => {
-    // Chama a função de geração e armazena o texto no estado
     const policyText = generatePolicy(formData); 
     setGeneratedPolicy(policyText);
   };
@@ -103,7 +99,6 @@ export default function PolicyGenPage() {
       // --- ETAPA 1: INFORMAÇÕES BÁSICAS ---
       case 1:
         return (
-          // ... (mantido igual) ...
           <div>
             <h2 className="text-2xl font-bold mb-4">Etapa 1: Informações Básicas</h2>
             <p className="text-gray-600 mb-6">Qual o nome do seu projeto e qual a linguagem principal?</p>
@@ -118,7 +113,7 @@ export default function PolicyGenPage() {
                 id="nomeDoProjeto"
                 value={formData.nomeDoProjeto}
                 onChange={(e) => updateFormData('nomeDoProjeto', e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
                 placeholder="Ex: PolicyGen SaaS"
               />
             </div>
@@ -132,7 +127,7 @@ export default function PolicyGenPage() {
                 id="linguagem"
                 value={formData.linguagem}
                 onChange={(e) => updateFormData('linguagem', e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
               >
                 <option value="">Selecione a Tecnologia</option> 
                 {languageOptions.map((option) => (
@@ -145,12 +140,11 @@ export default function PolicyGenPage() {
           </div>
         );
 
-      // --- ETAPA 2: ESCOPO DO SERVIÇO E DADOS ---
+      // --- ETAPA 2: ESCOPO DO SERVIÇO, DADOS E JURISDIÇÃO ---
       case 2:
         return (
-          // ... (mantido igual) ...
           <div>
-            <h2 className="text-2xl font-bold mb-4">Etapa 2: Escopo do Serviço e Dados</h2>
+            <h2 className="text-2xl font-bold mb-4">Etapa 2: Escopo Legal e de Dados</h2>
             <p className="text-gray-600 mb-6">Por favor, responda se o seu projeto realiza as seguintes atividades.</p>
 
             <QuestionCheckbox
@@ -180,13 +174,32 @@ export default function PolicyGenPage() {
               checked={formData.publicoAlvoCriancas}
               onChange={updateFormData as (field: keyof FormData, value: boolean) => void}
             />
+
+            {/* CAMPO: Jurisdição Territorial */}
+            <div className="mb-4 mt-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+              <label htmlFor="jurisdicao" className="block text-base font-medium text-gray-800 mb-1">
+                5. Qual o território principal de aplicação legal desta política?
+              </label>
+              <select
+                id="jurisdicao"
+                value={formData.jurisdicao}
+                onChange={(e) => updateFormData('jurisdicao', e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900" 
+              >
+                <option value="">Selecione a Jurisdição</option>
+                <option value="brasil">Brasil (LGPD)</option>
+                <option value="europa">Europa (GDPR)</option>
+                <option value="eua">EUA (CCPA/CPRA - Califórnia)</option>
+                <option value="global">Global (Aplicação Múltipla)</option>
+              </select>
+            </div>
+
           </div>
         );
 
       // --- ETAPA 3: TERMOS DE USO E LICENÇA ---
       case 3:
         return (
-          // ... (mantido igual) ...
           <div>
             <h2 className="text-2xl font-bold mb-4">Etapa 3: Termos de Uso e Licença</h2>
             <p className="text-gray-600 mb-6">Defina as condições de uso e o modelo de licenciamento do seu software.</p>
@@ -200,7 +213,7 @@ export default function PolicyGenPage() {
                 id="licencaCodigo"
                 value={formData.licencaCodigo}
                 onChange={(e) => updateFormData('licencaCodigo', e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
               >
                 <option value="">Selecione a Licença</option>
                 <option value="mit">MIT (Permissiva, muito comum para Open Source)</option>
@@ -218,7 +231,7 @@ export default function PolicyGenPage() {
                 id="modeloSoftware"
                 value={formData.modeloSoftware}
                 onChange={(e) => updateFormData('modeloSoftware', e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
               >
                 <option value="">Selecione o Modelo</option>
                 <option value="saas">SaaS (Software como Serviço, acesso via web/API)</option>
@@ -235,7 +248,7 @@ export default function PolicyGenPage() {
                 id="tipoMonetizacao"
                 value={formData.tipoMonetizacao}
                 onChange={(e) => updateFormData('tipoMonetizacao', e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
               >
                 <option value="">Selecione o Tipo</option>
                 <option value="gratuito">Gratuito (Sem custos futuros)</option>
@@ -248,7 +261,6 @@ export default function PolicyGenPage() {
 
       // --- ETAPA FINAL: REVISÃO E GERAÇÃO ---
       case totalSteps: 
-        // 4. Se a política já foi gerada, mostre o resultado em vez do formulário
         if (generatedPolicy) {
             return (
                 <div className="mt-4">
@@ -267,7 +279,6 @@ export default function PolicyGenPage() {
             );
         }
 
-        // 4. Se a política ainda não foi gerada, mostre o resumo e o botão
         return (
           <div>
             <h2 className="text-2xl font-bold mb-4">Etapa Final: Revisão e Geração</h2>
@@ -286,6 +297,7 @@ export default function PolicyGenPage() {
               <p>Coleta Dados Sensíveis: **{formData.coletaDadosSensivel ? 'SIM' : 'NÃO'}**</p>
               <p>Usa Terceiros (Ads/Analytics): **{formData.monetizacaoPorTerceiros ? 'SIM' : 'NÃO'}**</p>
               <p>Público Crianças: **{formData.publicoAlvoCriancas ? 'SIM' : 'NÃO'}**</p>
+              <p>Jurisdição Principal: **{formData.jurisdicao || 'Não Informado'}**</p>
 
               <h3 className="font-bold border-b pt-3 pb-1 mb-2">Termos e Licença (Etapa 3):</h3>
               <p>Licença de Código: **{formData.licencaCodigo || 'Não Informado'}**</p>
