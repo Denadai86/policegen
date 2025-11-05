@@ -1,6 +1,8 @@
 'use client'; 
 
 import { useState } from 'react';
+// Importa a função de geração e a interface de dados do nosso novo motor
+import { generatePolicy, FormData } from '@/utils/generatePolicy'; 
 
 // --- 1. CONFIGURAÇÕES DE DADOS E OPÇÕES ---
 
@@ -15,29 +17,12 @@ const languageOptions = [
   { value: 'outra', label: 'Outra / Não listada' },
 ];
 
-// Definição do tipo para os dados do formulário (FormData)
-interface FormData {
-  // ETAPA 1
-  nomeDoProjeto: string;
-  linguagem: string; 
-  // ETAPA 2
-  coletaDadosPessoais: boolean; 
-  coletaDadosSensivel: boolean; 
-  monetizacaoPorTerceiros: boolean; 
-  publicoAlvoCriancas: boolean; 
-  // ETAPA 3
-  licencaCodigo: 'mit' | 'gpl3' | 'proprietaria' | ''; 
-  modeloSoftware: 'saas' | 'open_source' | '';
-  tipoMonetizacao: 'gratuito' | 'freemium' | 'pago' | ''; 
-}
-
 // --- 2. COMPONENTE AUXILIAR PARA CHECKBOX (Sim/Não) ---
 
 interface QuestionCheckboxProps {
   label: string;
   name: keyof FormData; 
   checked: boolean;
-  // A função de callback espera apenas um booleano como valor
   onChange: (field: keyof FormData, value: boolean) => void;
 }
 
@@ -52,7 +37,6 @@ const QuestionCheckbox: React.FC<QuestionCheckboxProps> = ({ label, name, checke
         id={name}
         name={name}
         checked={checked}
-        // Inverte o valor booleano ao clicar
         onChange={() => onChange(name, !checked)} 
         className="h-6 w-6 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 ml-4"
       />
@@ -65,6 +49,7 @@ const QuestionCheckbox: React.FC<QuestionCheckboxProps> = ({ label, name, checke
 export default function PolicyGenPage() {
   const totalSteps = 4;
   const [currentStep, setCurrentStep] = useState(1);
+  const [generatedPolicy, setGeneratedPolicy] = useState(''); // NOVO ESTADO para o resultado
   
   const [formData, setFormData] = useState<FormData>({
     // Valores Iniciais
@@ -81,12 +66,15 @@ export default function PolicyGenPage() {
 
   // Função para avançar/voltar no formulário
   const nextStep = () => {
+    // Reseta o documento gerado se o usuário voltar
+    setGeneratedPolicy(''); 
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     }
   };
 
   const prevStep = () => {
+     setGeneratedPolicy('');
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
@@ -100,6 +88,14 @@ export default function PolicyGenPage() {
     }));
   };
 
+  // Funçao que chama o motor de geracao
+  const handleGenerate = () => {
+    // Chama a função de geração e armazena o texto no estado
+    const policyText = generatePolicy(formData); 
+    setGeneratedPolicy(policyText);
+  };
+
+
   // Renderização Condicional da Etapa
   const renderStep = () => {
     switch (currentStep) {
@@ -107,6 +103,7 @@ export default function PolicyGenPage() {
       // --- ETAPA 1: INFORMAÇÕES BÁSICAS ---
       case 1:
         return (
+          // ... (mantido igual) ...
           <div>
             <h2 className="text-2xl font-bold mb-4">Etapa 1: Informações Básicas</h2>
             <p className="text-gray-600 mb-6">Qual o nome do seu projeto e qual a linguagem principal?</p>
@@ -151,6 +148,7 @@ export default function PolicyGenPage() {
       // --- ETAPA 2: ESCOPO DO SERVIÇO E DADOS ---
       case 2:
         return (
+          // ... (mantido igual) ...
           <div>
             <h2 className="text-2xl font-bold mb-4">Etapa 2: Escopo do Serviço e Dados</h2>
             <p className="text-gray-600 mb-6">Por favor, responda se o seu projeto realiza as seguintes atividades.</p>
@@ -159,7 +157,6 @@ export default function PolicyGenPage() {
               label="1. O projeto armazena dados de identificação pessoal? (Nome, E-mail, IP, Cookies, CPF, etc.)"
               name="coletaDadosPessoais"
               checked={formData.coletaDadosPessoais}
-              // Cast necessário pois QuestionCheckbox espera um callback de 'boolean'
               onChange={updateFormData as (field: keyof FormData, value: boolean) => void}
             />
 
@@ -189,6 +186,7 @@ export default function PolicyGenPage() {
       // --- ETAPA 3: TERMOS DE USO E LICENÇA ---
       case 3:
         return (
+          // ... (mantido igual) ...
           <div>
             <h2 className="text-2xl font-bold mb-4">Etapa 3: Termos de Uso e Licença</h2>
             <p className="text-gray-600 mb-6">Defina as condições de uso e o modelo de licenciamento do seu software.</p>
@@ -250,10 +248,30 @@ export default function PolicyGenPage() {
 
       // --- ETAPA FINAL: REVISÃO E GERAÇÃO ---
       case totalSteps: 
+        // 4. Se a política já foi gerada, mostre o resultado em vez do formulário
+        if (generatedPolicy) {
+            return (
+                <div className="mt-4">
+                    <h3 className="text-xl font-bold text-green-700 mb-3">✅ Documento Gerado!</h3>
+                    <p className="text-gray-600 mb-4">Você pode copiar o texto abaixo. Ele está formatado em Markdown simples.</p>
+                    <div className="bg-gray-800 text-white p-4 rounded-md whitespace-pre-wrap font-mono text-sm h-96 overflow-y-scroll">
+                        {generatedPolicy}
+                    </div>
+                    <button
+                        onClick={() => setGeneratedPolicy('')}
+                        className="mt-4 w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                    >
+                        Voltar e Editar Respostas
+                    </button>
+                </div>
+            );
+        }
+
+        // 4. Se a política ainda não foi gerada, mostre o resumo e o botão
         return (
           <div>
             <h2 className="text-2xl font-bold mb-4">Etapa Final: Revisão e Geração</h2>
-            <p className="text-gray-600 mb-6">Confira suas respostas e gere sua política.</p>
+            <p className="text-gray-600 mb-6">Confira suas respostas e clique para gerar o documento final.</p>
             <div className="bg-gray-100 p-4 rounded-md">
               <h3 className="font-bold border-b pb-1 mb-2">Resumo (Etapa 1):</h3>
               <p>
@@ -275,7 +293,7 @@ export default function PolicyGenPage() {
               <p>Tipo Monetização: **{formData.tipoMonetizacao || 'Não Informado'}**</p>
             </div>
             <button
-              onClick={() => alert('Política Gerada!')}
+              onClick={handleGenerate}
               className="mt-6 w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               GERAR DOCUMENTO AGORA
@@ -315,9 +333,9 @@ export default function PolicyGenPage() {
         <div className="flex justify-between pt-6 border-t mt-4">
           <button
             onClick={prevStep}
-            disabled={currentStep === 1}
+            disabled={currentStep === 1 || generatedPolicy !== ''}
             className={`py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              currentStep === 1
+              currentStep === 1 || generatedPolicy !== ''
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
             }`}
@@ -325,7 +343,7 @@ export default function PolicyGenPage() {
             &larr; Voltar
           </button>
 
-          {currentStep < totalSteps ? (
+          {currentStep < totalSteps && generatedPolicy === '' ? (
             <button
               onClick={nextStep}
               className="py-2 px-4 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-colors"
@@ -333,7 +351,6 @@ export default function PolicyGenPage() {
               Próxima &rarr;
             </button>
           ) : (
-            // Espaço vazio para alinhar o botão "Voltar"
             <div /> 
           )}
         </div>
