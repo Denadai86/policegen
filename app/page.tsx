@@ -2,23 +2,73 @@
 
 import { useState } from 'react';
 
-// 1. Defina o tipo para os dados do formulário
-// Adicione mais campos à medida que o projeto avança
+// --- 1. CONFIGURAÇÕES DE DADOS E OPÇÕES ---
+
+// Lista de Linguagens/Tecnologias para o Select da Etapa 1
+const languageOptions = [
+  { value: 'javascript', label: 'JavaScript / TypeScript (React, Node, Next.js)' },
+  { value: 'python', label: 'Python (Django, Flask)' },
+  { value: 'java', label: 'Java (Spring, Android)' },
+  { value: 'php', label: 'PHP (Laravel, WordPress)' },
+  { value: 'go', label: 'Go (GoLang)' },
+  { value: 'mobile_nativo', label: 'Mobile Nativo (Swift, Kotlin)' },
+  { value: 'outra', label: 'Outra / Não listada' },
+];
+
+// Definição do tipo para os dados do formulário (FormData)
 interface FormData {
   nomeDoProjeto: string;
-  linguagem: string;
-  // Outros campos virão aqui
+  linguagem: string; 
+  // CAMPOS DA ETAPA 2:
+  coletaDadosPessoais: boolean; 
+  coletaDadosSensivel: boolean; 
+  monetizacaoPorTerceiros: boolean; 
+  publicoAlvoCriancas: boolean; 
 }
 
-// 2. O Componente Principal da sua página
+// --- 2. COMPONENTE AUXILIAR PARA CHECKBOX (Sim/Não) ---
+
+interface QuestionCheckboxProps {
+  label: string;
+  name: keyof FormData; 
+  checked: boolean;
+  onChange: (field: keyof FormData, value: boolean) => void;
+}
+
+const QuestionCheckbox: React.FC<QuestionCheckboxProps> = ({ label, name, checked, onChange }) => {
+  return (
+    <div className="flex items-center justify-between p-4 my-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+      <label htmlFor={name} className="flex-1 text-base font-medium text-gray-800">
+        {label}
+      </label>
+      <input
+        type="checkbox"
+        id={name}
+        name={name}
+        checked={checked}
+        // Inverte o valor booleano ao clicar
+        onChange={() => onChange(name, !checked)} 
+        className="h-6 w-6 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 ml-4"
+      />
+    </div>
+  );
+};
+
+// --- 3. O COMPONENTE PRINCIPAL DO FORMULÁRIO ---
+
 export default function PolicyGenPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     nomeDoProjeto: '',
     linguagem: '',
+    // Valores Iniciais da Etapa 2:
+    coletaDadosPessoais: false,
+    coletaDadosSensivel: false,
+    monetizacaoPorTerceiros: false,
+    publicoAlvoCriancas: false,
   });
 
-  const totalSteps = 4; // Exemplo: 4 etapas no total
+  const totalSteps = 4; 
 
   // Função para avançar/voltar no formulário
   const nextStep = () => {
@@ -33,22 +83,25 @@ export default function PolicyGenPage() {
     }
   };
 
-  // Função para atualizar os dados do formulário
-  const updateFormData = (field: keyof FormData, value: string) => {
+  // Função para atualizar os dados do formulário (Aceita string OU boolean)
+  const updateFormData = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
   };
 
-  // 3. Renderização Condicional da Etapa
+  // Renderização Condicional da Etapa
   const renderStep = () => {
     switch (currentStep) {
+      
+      // --- ETAPA 1: INFORMAÇÕES BÁSICAS ---
       case 1:
         return (
           <div>
             <h2 className="text-2xl font-bold mb-4">Etapa 1: Informações Básicas</h2>
             <p className="text-gray-600 mb-6">Qual o nome do seu projeto e qual a linguagem principal?</p>
+            
             {/* Campo Nome do Projeto */}
             <div className="mb-4">
               <label htmlFor="nomeDoProjeto" className="block text-sm font-medium text-gray-700">
@@ -60,42 +113,98 @@ export default function PolicyGenPage() {
                 value={formData.nomeDoProjeto}
                 onChange={(e) => updateFormData('nomeDoProjeto', e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                placeholder="Ex: PolicyGen SaaS"
               />
             </div>
-          </div>
-        );
-      case 2:
-        return (
-          <div>
-            <h2 className="text-2xl font-bold mb-4">Etapa 2: Escopo do Serviço</h2>
-            <p className="text-gray-600 mb-6">Esta será a próxima etapa de perguntas.</p>
-            {/* Aqui virão os campos da Etapa 2 */}
+
+            {/* Campo Linguagem Principal (SELECT) */}
             <div className="mb-4">
               <label htmlFor="linguagem" className="block text-sm font-medium text-gray-700">
-                Linguagem Principal
+                Linguagem / Tecnologia Principal
               </label>
-              <input
-                type="text"
+              <select
                 id="linguagem"
                 value={formData.linguagem}
                 onChange={(e) => updateFormData('linguagem', e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-              />
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
+              >
+                <option value="">Selecione a Tecnologia</option> 
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         );
-      case totalSteps: // Última etapa
+
+      // --- ETAPA 2: ESCOPO DO SERVIÇO E DADOS ---
+      case 2:
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Etapa 2: Escopo do Serviço e Dados</h2>
+            <p className="text-gray-600 mb-6">Por favor, responda se o seu projeto realiza as seguintes atividades. (Escolha Sim ou Não para cada item).</p>
+
+            <QuestionCheckbox
+              label="1. O projeto armazena dados de identificação pessoal? (Nome, E-mail, IP, Cookies, CPF, etc.)"
+              name="coletaDadosPessoais"
+              checked={formData.coletaDadosPessoais}
+              onChange={updateFormData as (field: keyof FormData, value: boolean) => void}
+            />
+
+            <QuestionCheckbox
+              label="2. O projeto armazena dados pessoais considerados Sensíveis? (Saúde, Biometria, Crenças, Orientação Sexual, etc.)"
+              name="coletaDadosSensivel"
+              checked={formData.coletaDadosSensivel}
+              onChange={updateFormData as (field: keyof FormData, value: boolean) => void}
+            />
+
+            <QuestionCheckbox
+              label="3. O projeto faz uso de serviços de terceiros para publicidade ou análise de dados? (Google Ads, Facebook Pixel, Google Analytics, etc.)"
+              name="monetizacaoPorTerceiros"
+              checked={formData.monetizacaoPorTerceiros}
+              onChange={updateFormData as (field: keyof FormData, value: boolean) => void}
+            />
+            
+            <QuestionCheckbox
+              label="4. O público principal ou parte significativa do público-alvo são crianças e adolescentes?"
+              name="publicoAlvoCriancas"
+              checked={formData.publicoAlvoCriancas}
+              onChange={updateFormData as (field: keyof FormData, value: boolean) => void}
+            />
+          </div>
+        );
+
+      // --- ETAPA 3: A SER DESENVOLVIDA ---
+      case 3:
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Etapa 3: Termos de Uso e Licença (Próximo Foco)</h2>
+            <p className="text-gray-600 mb-6">Esta etapa será o nosso próximo objetivo de programação.</p>
+            {/* Aqui virão os campos da Etapa 3 */}
+          </div>
+        );
+
+      // --- ETAPA FINAL: REVISÃO E GERAÇÃO ---
+      case totalSteps: 
         return (
           <div>
             <h2 className="text-2xl font-bold mb-4">Etapa Final: Revisão e Geração</h2>
             <p className="text-gray-600 mb-6">Confira suas respostas e gere sua política.</p>
             <div className="bg-gray-100 p-4 rounded-md">
+              <h3 className="font-bold border-b pb-1 mb-2">Resumo:</h3>
               <p>
                 **Nome do Projeto:** {formData.nomeDoProjeto || 'Não fornecido'}
               </p>
               <p>
-                **Linguagem:** {formData.linguagem || 'Não fornecida'}
+                **Linguagem:** {languageOptions.find(opt => opt.value === formData.linguagem)?.label || 'Não fornecida'}
               </p>
+              <h3 className="font-bold border-b pt-3 pb-1 mb-2">Impacto Legal:</h3>
+              <p>Coleta Dados Pessoais: **{formData.coletaDadosPessoais ? 'SIM' : 'NÃO'}**</p>
+              <p>Coleta Dados Sensíveis: **{formData.coletaDadosSensivel ? 'SIM' : 'NÃO'}**</p>
+              <p>Usa Terceiros (Ads/Analytics): **{formData.monetizacaoPorTerceiros ? 'SIM' : 'NÃO'}**</p>
+              <p>Público Crianças: **{formData.publicoAlvoCriancas ? 'SIM' : 'NÃO'}**</p>
             </div>
             <button
               onClick={() => alert('Política Gerada!')}
@@ -106,7 +215,7 @@ export default function PolicyGenPage() {
           </div>
         );
       default:
-        return <div>Etapa {currentStep}</div>;
+        return <div>Etapa Inválida</div>;
     }
   };
 
@@ -118,7 +227,7 @@ export default function PolicyGenPage() {
           PolicyGen
         </h1>
 
-        {/* Indicador de Progresso (Opcional, mas útil) */}
+        {/* Indicador de Progresso */}
         <div className="mb-8">
           <div className="h-2 bg-gray-200 rounded-full">
             <div
@@ -132,7 +241,7 @@ export default function PolicyGenPage() {
         </div>
 
         {/* Conteúdo da Etapa Atual */}
-        <div className="min-h-[250px]">{renderStep()}</div>
+        <div className="min-h-[300px]">{renderStep()}</div>
 
         {/* Botões de Navegação */}
         <div className="flex justify-between pt-6 border-t mt-4">
@@ -156,7 +265,7 @@ export default function PolicyGenPage() {
               Próxima &rarr;
             </button>
           ) : (
-            // Botão "Gerar" é tratado dentro da Etapa Final
+            // Espaço vazio para alinhar o botão "Voltar"
             <div /> 
           )}
         </div>
