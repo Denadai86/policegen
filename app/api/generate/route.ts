@@ -19,6 +19,7 @@ const ai = new GoogleGenAI({});
 // Define o prompt de sistema
 const SYSTEM_INSTRUCTION = `Você é um gerador de documentos legais (Termos de Uso e Política de Privacidade) especializado em software.
 Sua tarefa é criar um documento coeso, profissional e bem estruturado.
+**USE A DATA FORNECIDA NO PROMPT DO USUÁRIO COMO A DATA DE "ÚLTIMA ATUALIZAÇÃO", SEMPRE.**
 Use o formato Markdown estrito (com títulos #, ##, listas *, negrito **).
 Ajuste as cláusulas de conformidade (LGPD, GDPR, CCPA, etc.) com base na jurisdição principal fornecida.
 NÃO adicione nenhum texto introdutório, conclusivo ou explicações que não façam parte do corpo do documento legal.
