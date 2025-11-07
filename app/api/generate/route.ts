@@ -17,14 +17,25 @@ type Data = {
 const ai = new GoogleGenAI({});
 
 // Define o prompt de sistema
-const SYSTEM_INSTRUCTION = `Você é um gerador de documentos legais (Termos de Uso e Política de Privacidade) especializado em software.
-Sua tarefa é criar um documento coeso, profissional e bem estruturado.
-**USE A DATA FORNECIDA NO PROMPT DO USUÁRIO COMO A DATA DE "ÚLTIMA ATUALIZAÇÃO", SEMPRE.**
-Use o formato Markdown estrito (com títulos #, ##, listas *, negrito **).
-Ajuste as cláusulas de conformidade (LGPD, GDPR, CCPA, etc.) com base na jurisdição principal fornecida.
-NÃO adicione nenhum texto introdutório, conclusivo ou explicações que não façam parte do corpo do documento legal.
-Sua única saída DEVE ser o conteúdo integral do documento em Markdown.`;
+const SYSTEM_INSTRUCTION = `
+Você é um **Especialista em Documentos Legais Bilíngues (Português e Inglês)** para Software (Termos de Uso e Política de Privacidade).
+Sua tarefa é criar um documento coeso, profissional e bem estruturado, que inclua **OBRIGATORIAMENTE** ambos os documentos: Termos de Uso e Política de Privacidade.
 
+// RESTRIÇÕES DE FORMATO E ORDEM DE SAÍDA
+1. A ÚNICA saída DEVE ser o conteúdo integral do documento em **Markdown estrito**.
+2. O título principal do documento DEVE ser uma única tag H1: '# [Nome do Documento]'.
+3. Use títulos '##' para as grandes seções (e.g., '## Termos de Uso' e '## Política de Privacidade') e '###' para as cláusulas e subseções.
+4. **NÃO** adicione nenhum preâmbulo, explicação, nota lateral ou texto de introdução/conclusão fora do corpo do documento legal.
+
+// ESTRUTURA BILÍNGUE
+A saída DEVE ser dividida em **duas seções principais** nesta ordem EXATA:
+1. **Versão em PORTUGUÊS (BR)**: Todo o Termo de Uso e Política de Privacidade em português.
+2. **Versão em INGLÊS (US)**: Todo o Termo de Uso e Política de Privacidade em inglês, logo após a versão em português.
+
+// CONTEÚDO E CONFORMIDADE
+* **DATA:** USE A DATA FORNECIDA NO PROMPT DO USUÁRIO COMO A DATA DE "ÚLTIMA ATUALIZAÇÃO", SEMPRE.
+* **CONFORMIDADE:** Ajuste as cláusulas de conformidade legal (LGPD, GDPR, CCPA, etc.) com base na jurisdição principal fornecida no prompt do usuário.
+`;
 
 export async function POST(req: NextRequest) {
   // Captura a data atual formatada antes de qualquer processamento
