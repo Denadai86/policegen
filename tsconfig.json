@@ -18,9 +18,19 @@
         "name": "next"
       }
     ],
+    
+    // ----------------------------------------------------------------
+    // CORREÇÕES PARA O ALIAS DE IMPORTAÇÃO
+    // ----------------------------------------------------------------
+    "baseUrl": ".", // Define que o ponto de partida é a raiz do projeto (importante para paths)
     "paths": {
+      // Mapeamento que permite usar '@/utils/...' para referenciar a pasta 'utils/'
+      "@/utils/*": ["utils/*"],
+      // Mantendo o mapeamento genérico, caso você use @/app, @/lib, etc.
       "@/*": ["./*"]
     }
+    // ----------------------------------------------------------------
+    
   },
   "include": [
     "next-env.d.ts",
