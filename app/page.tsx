@@ -1,5 +1,5 @@
 // ====================================================================
-// page.tsx - PÁGINA PRINCIPAL, LOCALSTORAGE, CHAMADA API E DOWNLOAD
+// app/page.tsx - PÁGINA PRINCIPAL, LOCALSTORAGE, CHAMADA API E DOWNLOAD
 // ====================================================================
 
 // ESTE DEVE SER A PRIMEIRA LINHA DO ARQUIVO!
@@ -15,19 +15,17 @@ import {
     Target, 
     FileText,
     Loader2,
-    Monitor,
     Home
 } from 'lucide-react'; 
 
-// Importação CORRIGIDA: Usa o alias @/utils (como definimos) e a sintaxe está correta.
+// Importação da tipagem e funções utilitárias
 import type { FormData } from '@/utils/generatePolicy'; 
 import { 
-    generatePolicy, // Mantido para referência, mas não será usado (apenas para type safety)
     languageOptions, 
     idiomOptions, 
     getIdiomaLabel,
     jurisdictionOptions, 
-    getJurisdicaoLabel // <-- CORRIGIDO A SINTAXE DE IMPORTAÇÃO
+    getJurisdicaoLabel
 } from '@/utils/generatePolicy'; 
 
 // --- 1. CONFIGURAÇÃO DE DADOS INICIAIS ---
@@ -52,7 +50,6 @@ const EMPTY_FORM_DATA: FormData = {
     nomeDoResponsavel: '',
     jurisdicao: 'Brasil', 
     linguagem: languageOptions[0].value, 
-    // ALTERAÇÃO CRÍTICA: PADRONIZANDO O IDIOMA DE SAÍDA PARA PORTUGUÊS (pt-br)
     idiomaDoDocumento: 'pt-br', 
     licencaCodigo: 'MIT', 
     modeloSoftware: 'SAAS', 
@@ -162,7 +159,7 @@ const CheckboxField: React.FC<CheckboxProps> = ({ label, description, name, chec
 
 interface TextAreaProps {
     label: string;
-    name: string;
+    name: keyof FormData; // Corrigido para usar keyof FormData
     value: string;
     onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
     placeholder?: string;
@@ -178,7 +175,7 @@ const TextAreaField: React.FC<TextAreaProps> = ({ label, name, value, onChange, 
             name={name}
             value={value}
             // Garantindo que a tipagem do onChange é aceita
-            onChange={onChange as (e: ChangeEvent<HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement>) => void}
+            onChange={onChange as (e: ChangeEvent<HTMLTextAreaElement>) => void}
             placeholder={placeholder}
             rows={3}
             className="w-full px-4 py-2 border border-gray-700 rounded-lg bg-gray-900 text-white placeholder-gray-500 focus:ring-green-500 focus:border-green-500 transition duration-150"
@@ -195,6 +192,7 @@ export default function PolicyGenPage() {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [generatedAt, setGeneratedAt] = useState<string>('');
+    const [copySuccess, setCopySuccess] = useState<boolean>(false);
 
     // --- EFEITOS DE ESTADO (LOCAL STORAGE) ---
     useEffect(() => {
@@ -203,10 +201,10 @@ export default function PolicyGenPage() {
         if (savedData) {
             try {
                 const parsedData = JSON.parse(savedData);
+                // Usar a estrutura de '...prev' garante que novos campos tenham o valor padrão
                 setFormData(prev => ({ ...prev, ...parsedData }));
             } catch (e) {
                 console.error("Erro ao carregar dados do Local Storage:", e);
-                // Opcional: Limpar dados corrompidos
                 localStorage.removeItem(LOCAL_STORAGE_KEY);
             }
         }
@@ -222,6 +220,10 @@ export default function PolicyGenPage() {
     const nextStep = () => {
         if (step < STEPS.length) {
             setStep(step + 1);
+            // Limpa a política se estiver voltando/avançando para forçar nova geração
+            if(policy && step < STEPS.length - 1) { 
+                setPolicy('');
+            }
         }
     };
 
@@ -275,7 +277,6 @@ export default function PolicyGenPage() {
 
         } catch (err) {
             console.error('Erro na Geração:', err);
-            // Asserção de tipo para garantir que o erro seja tratado como um objeto
             setError(err instanceof Error ? err.message : 'Ocorreu um erro desconhecido ao gerar a política.');
         } finally {
             setLoading(false);
@@ -301,7 +302,10 @@ export default function PolicyGenPage() {
     const handleCopy = () => {
         if (!policy) return;
         navigator.clipboard.writeText(policy)
-            .then(() => alert('Documento copiado para a área de transferência!'))
+            .then(() => {
+                setCopySuccess(true);
+                setTimeout(() => setCopySuccess(false), 2000); // Mostra o feedback por 2s
+            })
             .catch(() => alert('Erro ao copiar documento.'));
     };
     
@@ -420,7 +424,7 @@ export default function PolicyGenPage() {
                             options={jurisdictionOptions}
                             onChange={handleFormChange as (e: ChangeEvent<HTMLSelectElement>) => void}
                         />
-                        {/* NOVO CAMPO DE IDIOMA - CRÍTICO PARA A NOVA ESTRUTURA */}
+                        {/* Campo de IDIOMA */}
                         <SelectField
                             label="Idioma do Documento Gerado"
                             name="idiomaDoDocumento"
@@ -463,16 +467,15 @@ export default function PolicyGenPage() {
                             <p><strong>Idioma de Saída:</strong> {getIdiomaLabel(formData.idiomaDoDocumento)}</p>
                             <p><strong>Coleta Dados Pessoais:</strong> {formData.coletaDadosPessoais ? 'Sim' : 'Não'}</p>
                             <p><strong>Dados Sensíveis:</strong> {formData.coletaDadosSensivel ? 'Sim' : 'Não'}</p>
+                            <p><strong>DPO:</strong> {formData.contatoDPO || 'Não informado'}</p>
                         </div>
 
-                        // ... na renderização do Case 5
-
+                        {/* Botão de Geração (CRITICAMENTE CORRIGIDO) */}
                         {!policy && (
                             <button
-                            onClick={handleGenerate}
-                            disabled={loading || !formData.nomeDoProjeto || !formData.nomeDoResponsavel}
-                            // ⭐️ CORREÇÃO: String de className está COMPLETA e FECHADA (linha 472 corrigida)
-                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-150"
+                                onClick={handleGenerate}
+                                disabled={loading || !formData.nomeDoProjeto || !formData.nomeDoResponsavel}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-150 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? (
                                     <span className="flex items-center justify-center">
@@ -485,5 +488,175 @@ export default function PolicyGenPage() {
                                     </span>
                                 )}
                             </button>
-                           )}
-{/* Restante do código do Case 5 continua aqui... */}
+                        )}
+
+                        {/* Área de Erro */}
+                        {error && (
+                            <div className="p-3 bg-red-800 text-white rounded-lg text-sm">
+                                <strong>Erro:</strong> {error}
+                            </div>
+                        )}
+
+                        {/* Visualizador de Política */}
+                        {policy && (
+                            <div className="mt-8">
+                                <h3 className="text-xl font-semibold text-green-400 mb-4">
+                                    Documento Gerado <CheckCircle className="inline h-5 w-5 ml-2" />
+                                </h3>
+                                
+                                <p className="text-gray-400 text-sm mb-4">Última Atualização: {generatedAt}</p>
+
+                                {/* Botões de Ação */}
+                                <div className="flex space-x-4 mb-4">
+                                    <button
+                                        onClick={handleCopy}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition duration-150 ${
+                                            copySuccess
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        }`}
+                                    >
+                                        {copySuccess ? (
+                                            <span className="flex items-center"><CheckCircle className="h-4 w-4 mr-2" /> Copiado!</span>
+                                        ) : (
+                                            <span className="flex items-center"><Clipboard className="h-4 w-4 mr-2" /> Copiar Markdown</span>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={handleDownload}
+                                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition duration-150"
+                                    >
+                                        Baixar (.md)
+                                    </button>
+                                </div>
+
+                                {/* Conteúdo da Política (Simples) */}
+                                <div 
+                                    className="p-6 bg-gray-900 border border-gray-700 rounded-lg whitespace-pre-wrap text-sm text-gray-200 overflow-x-auto"
+                                    // Renderiza o markdown de forma crua, sem biblioteca externa
+                                >
+                                    {policy}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            default:
+                return null;
+        }
+    }, [step, formData, policy, loading, error, generatedAt, copySuccess, handleFormChange]); // Incluído handleFormChange na dependência
+
+    // --- RENDERIZAÇÃO PRINCIPAL DO LAYOUT ---
+    return (
+        <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center p-4 sm:p-8">
+            <header className="w-full max-w-4xl text-center mb-8">
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-green-500">
+                    PolicyGen 
+                    <span className="text-xl font-normal text-gray-400"> powered by Gemini</span>
+                </h1>
+                <p className="text-gray-400 mt-2">Geração de Termos de Uso e Privacidade com foco legal.</p>
+            </header>
+
+            <main className="w-full max-w-4xl bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl">
+                {/* Indicador de Passo */}
+                <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+                    {STEPS.map((s) => {
+                        const isCurrent = s.id === step;
+                        const isCompleted = s.id < step || (step === STEPS.length && policy);
+                        const IconComponent = s.icon;
+
+                        return (
+                            <div key={s.id} className="text-center relative flex-1">
+                                {/* Círculo e Ícone */}
+                                <div className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center transition duration-300 ${
+                                    isCurrent 
+                                        ? 'bg-green-600 ring-4 ring-green-800' 
+                                        : isCompleted 
+                                        ? 'bg-green-500' 
+                                        : 'bg-gray-600'
+                                }`}>
+                                    <IconComponent className="h-5 w-5 text-white" />
+                                </div>
+                                {/* Linha Divisória (se não for o último) */}
+                                {s.id < STEPS.length && (
+                                    <div className={`absolute top-1/2 left-[calc(50%+20px)] w-[calc(100%-40px)] h-0.5 transform -translate-y-1/2 z-0 ${
+                                        isCompleted ? 'bg-green-500' : 'bg-gray-600'
+                                    }`} />
+                                )}
+                                {/* Nome do Passo */}
+                                <p className={`mt-2 text-xs sm:text-sm font-medium ${isCurrent ? 'text-green-400' : 'text-gray-400'} hidden sm:block`}>
+                                    {s.name}
+                                </p>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Título do Passo */}
+                <h2 className="text-2xl font-bold mb-6 text-white">
+                    {STEP_TITLES[step as keyof typeof STEP_TITLES]}
+                </h2>
+
+                {/* Conteúdo do Passo */}
+                <form onSubmit={step === STEPS.length && !policy ? handleGenerate : (e) => e.preventDefault()} className="space-y-8">
+                    {renderStepContent}
+
+                    {/* Botões de Navegação */}
+                    <div className="flex justify-between border-t border-gray-700 pt-4 mt-8">
+                        {step > 1 && step < STEPS.length && (
+                            <button
+                                type="button"
+                                onClick={prevStep}
+                                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition duration-150 flex items-center"
+                            >
+                                <ArrowRight className="h-4 w-4 rotate-180 mr-2" /> Anterior
+                            </button>
+                        )}
+                        
+                        {step === 1 && (
+                             <button
+                                type="button"
+                                onClick={nextStep}
+                                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition duration-150 flex items-center ml-auto"
+                            >
+                                Começar <ArrowRight className="h-4 w-4 ml-2" />
+                            </button>
+                        )}
+
+                        {step > 1 && step < STEPS.length - 1 && (
+                             <button
+                                type="button"
+                                onClick={nextStep}
+                                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition duration-150 flex items-center ml-auto"
+                            >
+                                Próximo <ArrowRight className="h-4 w-4 ml-2" />
+                            </button>
+                        )}
+                        
+                        {step === STEPS.length - 1 && !policy && (
+                            <button
+                                type="submit"
+                                // O botão de submit já está definido no renderStepContent, 
+                                // mas mantemos este aqui para garantir a navegação. 
+                                // O submit fará a chamada handleGenerate se os dados estiverem ok.
+                                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition duration-150 flex items-center ml-auto"
+                            >
+                                Ir para Geração <ArrowRight className="h-4 w-4 ml-2" />
+                            </button>
+                        )}
+
+                        {step === STEPS.length && policy && (
+                            <button
+                                type="button"
+                                onClick={() => setPolicy('')}
+                                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition duration-150 flex items-center ml-auto"
+                            >
+                                <ArrowRight className="h-4 w-4 rotate-180 mr-2" /> Gerar Nova Política
+                            </button>
+                        )}
+                    </div>
+                </form>
+            </main>
+        </div>
+    );
+}
