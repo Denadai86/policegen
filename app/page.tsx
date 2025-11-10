@@ -465,8 +465,25 @@ export default function PolicyGenPage() {
                             <p><strong>Dados Sensíveis:</strong> {formData.coletaDadosSensivel ? 'Sim' : 'Não'}</p>
                         </div>
 
+                        // ... na renderização do Case 5
+
                         {!policy && (
                             <button
-                                onClick={handleGenerate}
-                                disabled={loading || !formData.nomeDoProjeto || !formData.nomeDoResponsavel}
-                                className="w-full bg-green-600 hover:bg-green-700 text
+                            onClick={handleGenerate}
+                            disabled={loading || !formData.nomeDoProjeto || !formData.nomeDoResponsavel}
+                            // ⭐️ CORREÇÃO: String de className está COMPLETA e FECHADA (linha 472 corrigida)
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-150"
+                            >
+                                {loading ? (
+                                    <span className="flex items-center justify-center">
+                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                        Gerando Documento...
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center justify-center">
+                                        Gerar Documento Legal <ArrowRight className="ml-2 h-5 w-5" />
+                                    </span>
+                                )}
+                            </button>
+                           )}
+{/* Restante do código do Case 5 continua aqui... */}
