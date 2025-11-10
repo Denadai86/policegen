@@ -5,8 +5,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 // Importação do utils/generatePolicy (ajuste o caminho se necessário)
-import { FormData, getFormattedDate } from '@/utils/generatePolicy'; 
-
+import { FormData, getFormattedDate } from '@/utils/generatePolicy';
 // Adicionar esta linha para garantir que a rota use o ambiente Node.js completo
 // onde a SDK do Gemini funciona sem problemas de compatibilidade.
 export const runtime = 'nodejs'; 
@@ -23,50 +22,30 @@ type Data = {
 // 1. Inicializa o cliente Gemini
 // O GoogleGenAI({}) buscará automaticamente a chave GEMINI_API_KEY do environment
 const ai = new GoogleGenAI({});
-
 // ====================================================================
-// DEFINIÇÃO DO PROMPT DE SISTEMA (SYSTEM_INSTRUCTION)
+// DEFINIÇÃO DO PROMPT DE SISTEMA (SYSTEM_INSTRUCTION) - REVISADO PARA MONOLINGUE
 // Define o persona e as regras de formatação/estrutura
 // ====================================================================
 const SYSTEM_INSTRUCTION = `
-Você é um **Especialista em Documentos Legais Bilíngues (Português e Inglês)** especializado em **Softwares, SaaS e Plataformas Digitais**, com foco em **Termos de Uso** e **Políticas de Privacidade**.
-
+Você é um **Especialista em Documentos Legais** especializado em **Softwares, SaaS e Plataformas Digitais**, com foco em **Termos de Uso** e **Políticas de Privacidade**.
 Sua função é **gerar um documento jurídico completo, preciso e profissional**, que una **em um único arquivo**:
 - **Termos de Uso**
 - **Política de Privacidade**
 
----
+## ⚖️ REGRAS DE GERAÇÃO
 
-## ⚖️ REGRAS DE FORMATAÇÃO E ESTRUTURA
-
-1. A saída DEVE ser **estritamente em formato Markdown válido**.
-2. O documento deve conter **apenas o conteúdo legal** — **NENHUMA** explicação, comentário, preâmbulo ou rodapé adicional.
-3. O título principal DEVE ser uma única tag de nível 1: \`# [Nome do Documento]\`
-4. Use:
+1. O documento DEVE ser **estritamente na linguagem solicitada pelo usuário**.
+2. A saída DEVE ser **estritamente em formato Markdown válido**.
+3. O documento deve conter **apenas o conteúdo legal** — **NENHUMA** explicação, comentário, preâmbulo ou rodapé adicional.
+4. O título principal DEVE ser uma única tag de nível 1: \`# [Nome do Documento]\`
+5. Use:
    - \`##\` para seções principais (ex.: Termos de Uso, Política de Privacidade)
    - \`###\` para subseções ou cláusulas
 
----
-
-## 🌎 REGRAS BILÍNGUES (CORREÇÃO DE ESTRUTURA)
-
-1. **ORDEM DE SAÍDA OBRIGATÓRIA:**
-   a) Conteúdo integral em Português.
-   b) Use a **linha divisória Markdown**: \`---\`
-   c) Conteúdo integral em Inglês (DEVE começar com o título \`## English Version\`).
-
-2. **Consistência:** Garanta consistência legal e terminológica (ex: "Controlador de Dados" ↔ "Data Controller") entre as duas versões.
-
----
-
 ## 🧠 CONTEÚDO ESSENCIAL MÍNIMO
-
-Cada documento deve incluir, no mínimo, as seções definidas no prompt do usuário.
-
 - **Juridições:** Ajuste a conformidade (LGPD, GDPR, CCPA, etc.) automaticamente conforme a Jurisdição informada.
 - **Tons e Estilo:** Linguagem formal, clara e acessível, evitando jargões desnecessários.
 `;
-
 // ====================================================================
 // FUNÇÃO POST PRINCIPAL
 // ====================================================================
@@ -86,13 +65,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Cria o prompt do usuário com os dados do formulário (SEU BLOCO OTIMIZADO)
+    // EXTRAI O IDIOMA DO FORMULÁRIO E GARANTE UM PADRÃO
+    const idiomaSaida = formData?.idiomaDoDocumento || 'Português (pt-br)';
+
+
+    // 4. Cria o prompt do usuário com os dados do formulário (ADICIONANDO INSTRUÇÃO DE IDIOMA)
     const userPrompt = `
 Gere o documento completo contendo a **Política de Privacidade** e os **Termos de Uso**, conforme as instruções do sistema.
-
+**O idioma de saída DEVE ser: ${idiomaSaida}.**
 Preencha as seções com base nas informações fornecidas abaixo. 
 Se algum campo estiver em branco, use exemplos genéricos consistentes com um serviço SaaS.
-
 ---
 
 ### 📄 Detalhes do Projeto
@@ -124,9 +106,9 @@ Se algum campo estiver em branco, use exemplos genéricos consistentes com um se
 ---
 
 ### 🧠 Instruções Gerais
-Use linguagem jurídica formal, clara e acessível. Garanta consistência legal e terminológica entre as versões em português e inglês.
+Use linguagem jurídica formal, clara e acessível.
+**A saída DEVE ser unicamente em ${idiomaSaida}.**
 `;
-
 
     // 5. Chamada real à API Gemini
     const response = await ai.models.generateContent({
@@ -135,8 +117,8 @@ Use linguagem jurídica formal, clara e acessível. Garanta consistência legal 
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         temperature: 0.3,
-        // CORREÇÃO CRÍTICA: Aumenta o limite para o máximo (8192) para garantir o conteúdo bilíngue completo
-        maxOutputTokens: 8192, 
+        // CORREÇÃO CRÍTICA: Reduz o limite de tokens, já que não é mais bilíngue.
+        maxOutputTokens: 6150, 
       },
     });
 
@@ -153,7 +135,6 @@ Use linguagem jurídica formal, clara e acessível. Garanta consistência legal 
       policyContent,
       generatedAt
     }, { status: 200 });
-
   } catch (error) {
     console.error('Erro na API de geração (Gemini):', error);
     return NextResponse.json(
