@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
+// Importação simplificada do Google Analytics da biblioteca do Next.js
+import { GoogleAnalytics } from "@next/third-parties/google"; 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
+// Seu ID do Google Analytics
+const GA_MEASUREMENT_ID = 'G-BZ5KYMZ57L'; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +34,11 @@ export default function RootLayout({
       >
         {children}
       </body>
+      
+      {/* Coloque o componente aqui, fora da tag body mas dentro do <html> 
+          Ele faz o trabalho de carregar os scripts de forma otimizada. */}
+      <GoogleAnalytics gaId={GA_MEASUREMENT_ID} /> 
+
     </html>
   );
 }
