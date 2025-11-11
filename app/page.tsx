@@ -1,5 +1,6 @@
 // ====================================================================
 // app/page.tsx - PÁGINA PRINCIPAL, LOCALSTORAGE, CHAMADA API E DOWNLOAD
+// CORREÇÃO: API agora só é chamada no Passo 6 (Revisão)
 // ====================================================================
 
 // ESTE DEVE SER A PRIMEIRA LINHA DO ARQUIVO!
@@ -15,7 +16,8 @@ import {
     Target, 
     FileText,
     Loader2,
-    Home
+    Home,
+    Smartphone 
 } from 'lucide-react'; 
 
 // Importação da tipagem e funções utilitárias
@@ -29,20 +31,23 @@ import {
 } from '@/utils/generatePolicy'; 
 
 // --- 1. CONFIGURAÇÃO DE DADOS INICIAIS ---
+
 const STEPS = [
     { id: 1, name: 'Início', icon: Home },
-    { id: 2, name: 'Identificação', icon: Shield },
-    { id: 3, name: 'Dados e Tech', icon: Settings },
-    { id: 4, name: 'Legais e Escopo', icon: Target },
-    { id: 5, name: 'Revisão e Geração', icon: FileText }
+    { id: 2, name: 'Uso do Serviço', icon: Smartphone }, 
+    { id: 3, name: 'Identificação', icon: Shield },
+    { id: 4, name: 'Dados e Tech', icon: Settings },
+    { id: 5, name: 'Legais e Escopo', icon: Target },
+    { id: 6, name: 'Revisão e Geração', icon: FileText }
 ];
 
 const STEP_TITLES = {
     1: 'Bem-vindo ao Gerador de Políticas por IA',
-    2: 'Passo 2: Identificação do Projeto',
-    3: 'Passo 3: Configurações de Dados e Tecnologia',
-    4: 'Passo 4: Escopo Legal e Detalhes',
-    5: 'Passo 5: Revisão e Geração Final'
+    2: 'Passo 2: Política de Uso e Monetização (Termos de Uso)', 
+    3: 'Passo 3: Identificação do Projeto',
+    4: 'Passo 4: Configurações de Dados e Tecnologia',
+    5: 'Passo 5: Escopo Legal e Detalhes',
+    6: 'Passo 6: Revisão e Geração Final'
 };
 
 const EMPTY_FORM_DATA: FormData = {
@@ -66,7 +71,8 @@ const EMPTY_FORM_DATA: FormData = {
 
 const LOCAL_STORAGE_KEY = 'policyGenFormData';
 
-// --- 2. COMPONENTES DE CAMPO AUXILIARES ---
+// --- 2. COMPONENTES DE CAMPO AUXILIARES (Omitidos para brevidade, mas devem estar no arquivo) ---
+// (Mantidos no código abaixo para garantir o arquivo completo)
 
 interface InputProps {
     label: string;
@@ -159,7 +165,7 @@ const CheckboxField: React.FC<CheckboxProps> = ({ label, description, name, chec
 
 interface TextAreaProps {
     label: string;
-    name: keyof FormData; // Corrigido para usar keyof FormData
+    name: keyof FormData; 
     value: string;
     onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
     placeholder?: string;
@@ -174,7 +180,6 @@ const TextAreaField: React.FC<TextAreaProps> = ({ label, name, value, onChange, 
             id={name}
             name={name}
             value={value}
-            // Garantindo que a tipagem do onChange é aceita
             onChange={onChange as (e: ChangeEvent<HTMLTextAreaElement>) => void}
             placeholder={placeholder}
             rows={3}
@@ -182,6 +187,7 @@ const TextAreaField: React.FC<TextAreaProps> = ({ label, name, value, onChange, 
         />
     </div>
 );
+
 
 // --- 3. COMPONENTE PRINCIPAL ---
 
@@ -196,12 +202,10 @@ export default function PolicyGenPage() {
 
     // --- EFEITOS DE ESTADO (LOCAL STORAGE) ---
     useEffect(() => {
-        // Carregar do Local Storage na montagem
         const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (savedData) {
             try {
                 const parsedData = JSON.parse(savedData);
-                // Usar a estrutura de '...prev' garante que novos campos tenham o valor padrão
                 setFormData(prev => ({ ...prev, ...parsedData }));
             } catch (e) {
                 console.error("Erro ao carregar dados do Local Storage:", e);
@@ -211,7 +215,6 @@ export default function PolicyGenPage() {
     }, []);
 
     useEffect(() => {
-        // Salvar no Local Storage sempre que formData mudar
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
     }, [formData]);
 
@@ -220,23 +223,24 @@ export default function PolicyGenPage() {
     const nextStep = () => {
         if (step < STEPS.length) {
             setStep(step + 1);
-            // Limpa a política se estiver voltando/avançando para forçar nova geração
+            // Se avançar, limpa a política para forçar a re-geração se o usuário voltar
             if(policy && step < STEPS.length - 1) { 
                 setPolicy('');
             }
+            setError(null); 
         }
     };
 
     const prevStep = () => {
         if (step > 1) {
             setStep(step - 1);
+            setError(null); 
         }
     };
 
     const handleFormChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         
-        // Trata a conversão de checkbox para booleano
         const newValue = (type === 'checkbox' && 'checked' in e.target) 
             ? e.target.checked 
             : value;
@@ -247,16 +251,24 @@ export default function PolicyGenPage() {
         }));
     };
 
-    // --- FUNÇÃO DE CHAMADA DA API GEMINI ---
-    const handleGenerate = async (e: FormEvent) => {
-        e.preventDefault();
+    // --- FUNÇÃO DE CHAMADA DA API GEMINI (CORRIGIDA) ---
+    // Remove o argumento de evento para ser chamado diretamente pelo onClick
+    const handleGenerate = async () => {
+        
+        // ⭐️ VALIDAÇÃO AGORA NO PONTO DE GERAÇÃO
+        if (!formData.nomeDoProjeto || !formData.nomeDoResponsavel) {
+            setError("O nome do projeto e do responsável são obrigatórios. Por favor, preencha no Passo 3.");
+            // Opcional: Voltar para o passo 3 se a validação falhar
+            if(step !== 3) setStep(3); 
+            return;
+        }
+
         setLoading(true);
         setPolicy('');
         setError(null);
         setGeneratedAt('');
 
         try {
-            // Chamada para a rota de API do Next.js
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: {
@@ -273,7 +285,8 @@ export default function PolicyGenPage() {
 
             setPolicy(data.policyContent);
             setGeneratedAt(data.generatedAt);
-            setStep(STEPS.length); // Vai para o último passo (Revisão e Geração)
+            // Permanece no Passo 6, mas agora exibe a política
+            // setStep(STEPS.length); 
 
         } catch (err) {
             console.error('Erro na Geração:', err);
@@ -283,7 +296,7 @@ export default function PolicyGenPage() {
         }
     };
     
-    // --- FUNÇÃO DE DOWNLOAD ---
+    // --- FUNÇÕES DE DOWNLOAD E COPIAR ---
     const handleDownload = () => {
         if (!policy) return;
 
@@ -291,20 +304,20 @@ export default function PolicyGenPage() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${formData.nomeDoProjeto.replace(/\s/g, '_')}_Termos_e_Politicas.md`;
+        const safeFileName = formData.nomeDoProjeto.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        link.download = `${safeFileName}_Termos_e_Politicas.md`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     };
 
-    // --- FUNÇÃO DE COPIAR ---
     const handleCopy = () => {
         if (!policy) return;
         navigator.clipboard.writeText(policy)
             .then(() => {
                 setCopySuccess(true);
-                setTimeout(() => setCopySuccess(false), 2000); // Mostra o feedback por 2s
+                setTimeout(() => setCopySuccess(false), 2000); 
             })
             .catch(() => alert('Erro ao copiar documento.'));
     };
@@ -312,12 +325,12 @@ export default function PolicyGenPage() {
     // --- RENDERIZAÇÃO CONDICIONAL DO CONTEÚDO ---
     const renderStepContent = useMemo(() => {
         switch (step) {
-            case 1:
+            case 1: // Início
                 return (
                     <div className="space-y-6">
                         <p className="text-gray-400">
                             Bem-vindo ao Gerador de Documentos Jurídicos utilizando o Gemini. 
-                            Responda a cinco passos simples e obtenha seus Termos de Uso e Política de Privacidade unificados, personalizados e com foco na conformidade legal.
+                            Responda a seis passos simples e obtenha seus Termos de Uso e Política de Privacidade unificados, personalizados e com foco na conformidade legal.
                         </p>
                         <ul className="text-gray-300 space-y-3 list-disc list-inside">
                             <li>🎯 Geração de Termos de Uso e Política de Privacidade em um único arquivo.</li>
@@ -326,23 +339,9 @@ export default function PolicyGenPage() {
                         </ul>
                     </div>
                 );
-            case 2:
+            case 2: // Uso do Serviço (Termos de Uso)
                 return (
                     <div className="space-y-6">
-                        <InputField
-                            label="Nome do Projeto / Serviço (Obrigatório)"
-                            name="nomeDoProjeto"
-                            value={formData.nomeDoProjeto}
-                            onChange={handleFormChange as (e: ChangeEvent<HTMLInputElement>) => void}
-                            placeholder="Ex: Gemini SaaS App"
-                        />
-                        <InputField
-                            label="Nome da Empresa / Pessoa Responsável (Obrigatório)"
-                            name="nomeDoResponsavel"
-                            value={formData.nomeDoResponsavel}
-                            onChange={handleFormChange as (e: ChangeEvent<HTMLInputElement>) => void}
-                            placeholder="Ex: Tech Solutions Ltda."
-                        />
                         <SelectField
                             label="Modelo de Software"
                             name="modeloSoftware"
@@ -367,9 +366,50 @@ export default function PolicyGenPage() {
                             ]}
                             onChange={handleFormChange as (e: ChangeEvent<HTMLSelectElement>) => void}
                         />
+                        <CheckboxField
+                            label="Incluir Cláusula de “Não Garantia / AS IS”?"
+                            description="Recomendado para limitar a responsabilidade sobre o uso do software."
+                            name="incluirNaoGarantia"
+                            checked={formData.incluirNaoGarantia}
+                            onChange={handleFormChange as (e: ChangeEvent<HTMLInputElement>) => void}
+                        />
+                         <CheckboxField
+                            label="Monetização por Terceiros (Ads, Afiliados)?"
+                            description="Se o seu serviço inclui anúncios ou links de terceiros. Afeta a seção de Responsabilidade."
+                            name="monetizacaoPorTerceiros"
+                            checked={formData.monetizacaoPorTerceiros}
+                            onChange={handleFormChange as (e: ChangeEvent<HTMLInputElement>) => void}
+                        />
                     </div>
                 );
-            case 3:
+            case 3: // Identificação 
+                return (
+                    <div className="space-y-6">
+                        <InputField
+                            label="Nome do Projeto / Serviço (Obrigatório)"
+                            name="nomeDoProjeto"
+                            value={formData.nomeDoProjeto}
+                            onChange={handleFormChange as (e: ChangeEvent<HTMLInputElement>) => void}
+                            placeholder="Ex: Gemini SaaS App"
+                        />
+                        <InputField
+                            label="Nome da Empresa / Pessoa Responsável (Obrigatório)"
+                            name="nomeDoResponsavel"
+                            value={formData.nomeDoResponsavel}
+                            onChange={handleFormChange as (e: ChangeEvent<HTMLInputElement>) => void}
+                            placeholder="Ex: Tech Solutions Ltda."
+                        />
+                        <InputField
+                            label="E-mail de Contato do Encarregado de Dados (DPO/POC)"
+                            name="contatoDPO"
+                            value={formData.contatoDPO}
+                            onChange={handleFormChange as (e: ChangeEvent<HTMLInputElement>) => void}
+                            placeholder="dpo@empresa.com"
+                            type="email"
+                        />
+                    </div>
+                );
+            case 4: // Dados e Tech 
                 return (
                     <div className="space-y-6">
                         <SelectField
@@ -414,7 +454,7 @@ export default function PolicyGenPage() {
                         />
                     </div>
                 );
-            case 4:
+            case 5: // Legais e Escopo
                 return (
                     <div className="space-y-6">
                         <SelectField
@@ -424,21 +464,12 @@ export default function PolicyGenPage() {
                             options={jurisdictionOptions}
                             onChange={handleFormChange as (e: ChangeEvent<HTMLSelectElement>) => void}
                         />
-                        {/* Campo de IDIOMA */}
                         <SelectField
                             label="Idioma do Documento Gerado"
                             name="idiomaDoDocumento"
                             value={formData.idiomaDoDocumento}
                             options={idiomOptions}
                             onChange={handleFormChange as (e: ChangeEvent<HTMLSelectElement>) => void}
-                        />
-                         <InputField
-                            label="E-mail de Contato do Encarregado de Dados (DPO/POC)"
-                            name="contatoDPO"
-                            value={formData.contatoDPO}
-                            onChange={handleFormChange as (e: ChangeEvent<HTMLInputElement>) => void}
-                            placeholder="dpo@empresa.com"
-                            type="email"
                         />
                         <TextAreaField
                             label="Finalidade/Objetivo da Coleta de Dados"
@@ -456,10 +487,10 @@ export default function PolicyGenPage() {
                         />
                     </div>
                 );
-            case 5:
+            case 6: // Revisão e Geração ⭐️ NOVO PONTO DE CHAMADA DA API
                 return (
                     <div className="space-y-6">
-                        <h3 className="text-xl font-semibold text-green-400">Dados para Geração:</h3>
+                        <h3 className="text-xl font-semibold text-green-400">Dados para Revisão:</h3>
                         <div className="bg-gray-800 p-4 rounded-lg text-sm text-gray-300 space-y-2">
                             <p><strong>Projeto:</strong> {formData.nomeDoProjeto || 'Não informado'}</p>
                             <p><strong>Responsável:</strong> {formData.nomeDoResponsavel || 'Não informado'}</p>
@@ -468,12 +499,23 @@ export default function PolicyGenPage() {
                             <p><strong>Coleta Dados Pessoais:</strong> {formData.coletaDadosPessoais ? 'Sim' : 'Não'}</p>
                             <p><strong>Dados Sensíveis:</strong> {formData.coletaDadosSensivel ? 'Sim' : 'Não'}</p>
                             <p><strong>DPO:</strong> {formData.contatoDPO || 'Não informado'}</p>
+                            
+                            {/* Adicionar um link para voltar e editar, se necessário */}
+                            <button 
+                                type="button"
+                                onClick={() => setStep(3)}
+                                className="text-xs text-blue-400 hover:text-blue-300 underline mt-2 block"
+                            >
+                                Clique aqui para voltar e editar a Identificação
+                            </button>
                         </div>
 
-                        {/* Botão de Geração (CRITICAMENTE CORRIGIDO) */}
+                        {/* Botão de Geração - AGORA CORRIGIDO PARA ESTE PASSO */}
                         {!policy && (
                             <button
-                                onClick={handleGenerate}
+                                // type="button" garante que não dispara o onSubmit do formulário
+                                type="button" 
+                                onClick={handleGenerate} 
                                 disabled={loading || !formData.nomeDoProjeto || !formData.nomeDoResponsavel}
                                 className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-150 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -533,7 +575,6 @@ export default function PolicyGenPage() {
                                 {/* Conteúdo da Política (Simples) */}
                                 <div 
                                     className="p-6 bg-gray-900 border border-gray-700 rounded-lg whitespace-pre-wrap text-sm text-gray-200 overflow-x-auto"
-                                    // Renderiza o markdown de forma crua, sem biblioteca externa
                                 >
                                     {policy}
                                 </div>
@@ -544,7 +585,7 @@ export default function PolicyGenPage() {
             default:
                 return null;
         }
-    }, [step, formData, policy, loading, error, generatedAt, copySuccess, handleFormChange]); // Incluído handleFormChange na dependência
+    }, [step, formData, policy, loading, error, generatedAt, copySuccess, handleFormChange]); 
 
     // --- RENDERIZAÇÃO PRINCIPAL DO LAYOUT ---
     return (
@@ -598,12 +639,14 @@ export default function PolicyGenPage() {
                 </h2>
 
                 {/* Conteúdo do Passo */}
-                <form onSubmit={step === STEPS.length && !policy ? handleGenerate : (e) => e.preventDefault()} className="space-y-8">
+                {/* Removemos o `onSubmit` que disparava o handleGenerate, confiando apenas nos botões */}
+                <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
                     {renderStepContent}
 
-                    {/* Botões de Navegação */}
+                    {/* Botões de Navegação (Lógica Corrigida para o fluxo sequencial) */}
                     <div className="flex justify-between border-t border-gray-700 pt-4 mt-8">
-                        {step > 1 && step < STEPS.length && (
+                        {/* Botão ANTERIOR (Visível em todos exceto no Passo 1 e no Passo 6 após a geração) */}
+                        {step > 1 && !(step === STEPS.length && policy) && (
                             <button
                                 type="button"
                                 onClick={prevStep}
@@ -613,42 +656,27 @@ export default function PolicyGenPage() {
                             </button>
                         )}
                         
-                        {step === 1 && (
+                        {/* Botão AVANÇAR / PRÓXIMO (Visível nos passos 1 a 5) */}
+                        {/* A geração da política só acontece no passo 6, então o botão de Próximo deve aparecer até o passo 5 */}
+                        {step < STEPS.length && !policy && (
                              <button
-                                type="button"
+                                type="button" // Garante que é apenas navegação
                                 onClick={nextStep}
-                                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition duration-150 flex items-center ml-auto"
+                                // Centraliza se não houver botão Anterior (Passo 1)
+                                className={`px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition duration-150 flex items-center ${step === 1 ? 'ml-auto' : ''}`}
                             >
-                                Começar <ArrowRight className="h-4 w-4 ml-2" />
-                            </button>
-                        )}
-
-                        {step > 1 && step < STEPS.length - 1 && (
-                             <button
-                                type="button"
-                                onClick={nextStep}
-                                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition duration-150 flex items-center ml-auto"
-                            >
-                                Próximo <ArrowRight className="h-4 w-4 ml-2" />
+                                {step === STEPS.length - 1 ? 'Ir para Revisão' : step === 1 ? 'Começar' : 'Próximo'} <ArrowRight className="h-4 w-4 ml-2" />
                             </button>
                         )}
                         
-                        {step === STEPS.length - 1 && !policy && (
-                            <button
-                                type="submit"
-                                // O botão de submit já está definido no renderStepContent, 
-                                // mas mantemos este aqui para garantir a navegação. 
-                                // O submit fará a chamada handleGenerate se os dados estiverem ok.
-                                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition duration-150 flex items-center ml-auto"
-                            >
-                                Ir para Geração <ArrowRight className="h-4 w-4 ml-2" />
-                            </button>
-                        )}
-
+                        {/* Botão GERAR NOVA POLÍTICA (Visível apenas no Passo 6, após a geração) */}
                         {step === STEPS.length && policy && (
                             <button
                                 type="button"
-                                onClick={() => setPolicy('')}
+                                onClick={() => {
+                                    setPolicy(''); 
+                                    setStep(STEPS.length - 1); // Volta para o passo 5 (último de input, ou volta para o 6 para gerar novamente)
+                                }}
                                 className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition duration-150 flex items-center ml-auto"
                             >
                                 <ArrowRight className="h-4 w-4 rotate-180 mr-2" /> Gerar Nova Política
