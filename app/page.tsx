@@ -329,8 +329,8 @@ export default function PolicyGenPage() {
                 return (
                     <div className="space-y-6">
                         <p className="text-gray-400">
-                            Bem-vindo ao Gerador de Documentos Jurídicos utilizando o Gemini. 
-                            Responda a seis passos simples e obtenha seus Termos de Uso e Política de Privacidade unificados, personalizados e com foco na conformidade legal.
+                            Bem-vindo ao Gerador de Documentos Jurídicos utilizando o AI. 
+                            Responda a quatro passos simples e obtenha seus Termos de Uso e Política de Privacidade unificados, personalizados e com foco na conformidade legal.
                         </p>
                         <ul className="text-gray-300 space-y-3 list-disc list-inside">
                             <li>🎯 Geração de Termos de Uso e Política de Privacidade em um único arquivo.</li>
@@ -593,7 +593,7 @@ export default function PolicyGenPage() {
             <header className="w-full max-w-4xl text-center mb-8">
                 <h1 className="text-3xl sm:text-4xl font-extrabold text-green-500">
                     PolicyGen 
-                    <span className="text-xl font-normal text-gray-400"> powered by Gemini</span>
+                    <span className="text-xl font-normal text-gray-400"> powered by AçãoLeve</span>
                 </h1>
                 <p className="text-gray-400 mt-2">Geração de Termos de Uso e Privacidade com foco legal.</p>
             </header>
