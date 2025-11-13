@@ -184,6 +184,50 @@ export default function PolicyGenPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId, loadingAuth]); // Depende do ID de usuário e do estado de loading da autenticação
 
+    // 1.b Efeito para sincronizar o passo com a query string ou hash
+    useEffect(() => {
+        function syncStepFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const s = params.get('step');
+                if (s) {
+                    const n = Number(s);
+                    if (!Number.isNaN(n) && n >= 1 && n <= STEPS.length) {
+                        setStep(n);
+                        // rolar suavemente para a seção de steps quando disponível
+                        setTimeout(() => {
+                            const el = document.getElementById('steps');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                        return;
+                    }
+                }
+
+                // se não houver param step mas houver hash '#steps', vamos para o passo 1 por padrão
+                if (window.location.hash === '#steps') {
+                    setStep(1);
+                    setTimeout(() => {
+                        const el = document.getElementById('steps');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 50);
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        // sincroniza no mount
+        syncStepFromUrl();
+
+        // atualiza quando houver navegação no histórico (back/forward) ou hashchange
+        window.addEventListener('popstate', syncStepFromUrl);
+        window.addEventListener('hashchange', syncStepFromUrl);
+        return () => {
+            window.removeEventListener('popstate', syncStepFromUrl);
+            window.removeEventListener('hashchange', syncStepFromUrl);
+        };
+    }, []);
+
     // 2. Efeito de Debounce para Salvar Rascunho
     useDebouncedEffect(() => {
         if (userId && !loadingAuth && step < STEPS.length) {
@@ -457,9 +501,48 @@ export default function PolicyGenPage() {
                 <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
                     {renderStepContent}
 
-                    {/* Botões de Navegação (Mantidos) */}
+                    {/* Botões de Navegação */}
                     <div className="flex justify-between border-t border-gray-700 pt-4 mt-8">
-                        {/* ... (Lógica de Anterior/Próximo/Gerar Nova mantida) ... */}
+                        <div>
+                            <button
+                                type="button"
+                                onClick={prevStep}
+                                disabled={step === 1}
+                                className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium rounded-md transition"
+                            >
+                                ← Anterior
+                            </button>
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                            {/* Se não for o último passo, mostra Próximo */}
+                            {step < STEPS.length ? (
+                                <button
+                                    type="button"
+                                    onClick={nextStep}
+                                    className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-md transition"
+                                >
+                                    Próximo
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </button>
+                            ) : (
+                                // Último passo: botão de gerar
+                                <button
+                                    type="button"
+                                    onClick={handleGenerate}
+                                    disabled={loading || !formData.nomeDoProjeto || !formData.nomeDoResponsavel}
+                                    className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? (
+                                        <span className="flex items-center">
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando...
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center">Gerar Documento <ArrowRight className="ml-2 h-4 w-4" /></span>
+                                    )}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </form>
             </main>
