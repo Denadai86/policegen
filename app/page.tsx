@@ -24,7 +24,8 @@ import {
 } from 'lucide-react';
 
 // Importação da tipagem e funções utilitárias do FORM
-import type { FormData, PolicyDocument } from '../utils/generatePolicy'; // Adicionado PolicyDocument
+import type { FormData } from '../utils/generatePolicy';
+import type { PolicyDocument } from '../utils/firestore';
 import { 
     languageOptions, 
     idiomOptions, 
@@ -125,7 +126,7 @@ export default function PolicyGenPage() {
     const fetchHistory = useCallback(async (uid: string) => {
         setLoadingHistory(true);
         try {
-            const historyData = await getPoliciesHistory(uid);
+            const historyData = await getPoliciesHistory(uid) as PolicyDocument[];
             // Ordena o histórico pelo mais recente
             historyData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             setHistory(historyData);

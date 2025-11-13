@@ -9,43 +9,56 @@ import { v4 as uuidv4 } from 'uuid';
 // ⭐️ IMPORTAÇÃO NOVA: Para conectar ao Firestore
 import * as admin from 'firebase-admin'; 
 
-// Importação do utils/generatePolicy (ajuste o caminho se necessário)
-import { FormData, getFormattedDate } from '@/utils/generatePolicy'; 
+// Importação do utils/generatePolicy (ajuste o caminho para a pasta utils na raiz)
+import { FormData, getFormattedDate } from '../../../utils/generatePolicy'; 
 
 // Garante que a rota use o ambiente Node.js completo para APIs
 export const runtime = 'nodejs'; 
 
-// ⭐️ ----------------------------------------------------
-// LÓGICA DE INICIALIZAÇÃO DO FIRESTORE ADMIN
 // ----------------------------------------------------
-if (!admin.apps.length) {
+// Inicialização preguiçosa do Firebase Admin (safe)
+// - Normaliza a chave privada recebida via env (remove aspas, transforma \n em newlines)
+// - Inicializa o admin apenas quando necessário (evita erro em build/prerender)
+// ----------------------------------------------------
+
+let db: FirebaseFirestore.Firestore | null = null;
+
+function normalizePrivateKey(key?: string) {
+  if (!key) return undefined;
+  // Remove aspas que podem ter sido adicionadas ao colar no .env
+  let k = key.replace(/^"|"$/g, '').replace(/^'|'$/g, '');
+  // Substitui sequências de escape \n por quebras de linha reais
+  k = k.replace(/\\n/g, '\n');
+  return k;
+}
+
+async function ensureFirebaseAdmin() {
+  if (admin.apps.length > 0 && db) return db;
+
   try {
-    // Configura as credenciais de serviço a partir das variáveis de ambiente
-    const serviceAccount = {
+    const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
+    const serviceAccount: any = {
       projectId: process.env.FIREBASE_PROJECT_ID,
-      // CRÍTICO: Trata as quebras de linha substituídas para que a SDK Admin as entenda
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'), 
+      privateKey,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     };
 
     if (!serviceAccount.projectId || !serviceAccount.privateKey || !serviceAccount.clientEmail) {
-        // Isso é esperado se você ainda não configurou as variáveis no .env.local
-        // ou na Vercel, mas evita falhas se a API for chamada sem elas.
-        console.warn("AVISO: Variáveis de ambiente do Firebase incompletas. O logging de uso não funcionará.");
-    } else {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-        });
-        console.log("Firebase Admin inicializado com sucesso.");
+      console.warn('AVISO: Variáveis de ambiente do Firebase incompletas. O logging de uso não funcionará.');
+      return null;
     }
 
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    db = admin.firestore();
+    console.log('Firebase Admin inicializado com sucesso.');
+    return db;
   } catch (error) {
     console.error('Falha ao inicializar o Firebase Admin:', error);
+    return null;
   }
 }
-
-// Obtém a referência ao Firestore
-const db = admin.apps.length > 0 ? admin.firestore() : null;
 
 /**
  * Registra os dados da geração da política no Firestore.
@@ -57,34 +70,36 @@ async function logPolicyGeneration(
     userPrompt: string,
     policyContent: string,
 ) {
-    if (!db) {
-        // Se o DB não inicializou devido à falta de variáveis, saímos silenciosamente.
-        return;
-    }
-    
-    try {
-        const generationLog = {
-            sessionId,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(), // Timestamp preciso do servidor
-            generatedAtString: generatedAt,
-            // Metadados importantes para análise rápida
-            projectName: formData.nomeDoProjeto,
-            jurisdiction: formData.jurisdicao,
-            outputLanguage: formData.idiomaDoDocumento,
-            // Dados completos
-            inputFormData: formData,
-            userPrompt,
-            policyContent,
-            policyLength: policyContent.length,
-        };
+  // Tenta garantir que o Admin esteja inicializado (lazy init)
+  const _db = await ensureFirebaseAdmin();
+  if (!_db) {
+    // Se o DB não inicializou devido à falta de variáveis, saímos silenciosamente.
+    return;
+  }
 
-        // Salva na coleção 'policyGenerations', usando o sessionId como ID do documento
-        await db.collection('policyGenerations').doc(sessionId).set(generationLog);
-        // console.log(`Log de geração salvo com sucesso no Firestore: ${sessionId}`); 
-    } catch (error) {
-        // Logamos o erro, mas não o jogamos para não quebrar a API principal
-        console.error('ERRO ao salvar log no Firestore:', error);
-    }
+  try {
+    const generationLog = {
+      sessionId,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(), // Timestamp preciso do servidor
+      generatedAtString: generatedAt,
+      // Metadados importantes para análise rápida
+      projectName: formData.nomeDoProjeto,
+      jurisdiction: formData.jurisdicao,
+      outputLanguage: formData.idiomaDoDocumento,
+      // Dados completos
+      inputFormData: formData,
+      userPrompt,
+      policyContent,
+      policyLength: policyContent.length,
+    };
+
+    // Salva na coleção 'policyGenerations', usando o sessionId como ID do documento
+    await _db.collection('policyGenerations').doc(sessionId).set(generationLog);
+    // console.log(`Log de geração salvo com sucesso no Firestore: ${sessionId}`); 
+  } catch (error) {
+    // Logamos o erro, mas não o jogamos para não quebrar a API principal
+    console.error('ERRO ao salvar log no Firestore:', error);
+  }
 }
 // ⭐️ ----------------------------------------------------
 // FIM DA LÓGICA DE FIRESTORE

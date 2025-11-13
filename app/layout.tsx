@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 // Importa o componente Script do Next.js para carregar scripts externos
 import Script from 'next/script';
 // Importa o componente GoogleAnalytics do Next.js
-import { GoogleAnalytics } from "@next/third-parties/google";
 // Importação das fontes Geist para o projeto
 import { Geist, Geist_Mono } from "next/font/google";
 // Importação global de CSS
@@ -14,8 +13,8 @@ import "./globals.css";
 // -------------------------------------------------------------
 // Seu ID de Publicador do AdSense
 const ADSENSE_PUB_ID = 'ca-pub-9532990788495378';
-// Seu ID de Medição do Google Analytics
-const GA_MEASUREMENT_ID = 'G-BZ5KYMZ57L';
+// Obs: Removida a importação/component GoogleAnalytics para evitar erro de build
+// Caso queira re-adicionar, certifique-se de instalar/usar o pacote correto
 
 // Configuração das fontes
 const geistSans = Geist({
@@ -92,8 +91,7 @@ export default function RootLayout({
 
       </body>
       
-      {/* 2. Google Analytics (Carregado na parte inferior do <body>) */}
-      <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
+  {/* Google Analytics removido temporariamente para evitar dependência faltante em tempo de build */}
 
     </html>
   );

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously } from 'firebase/auth';
-import { getFirestore, Firestore, setLogLevel, doc, collection, query, where, getDocs, QuerySnapshot, DocumentData, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, Firestore, setLogLevel, doc, collection, query, where, getDocs, QuerySnapshot, DocumentData, orderBy, limit, addDoc, setDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 // Ativa o log de debug do Firestore (útil para desenvolvimento)
 setLogLevel('debug');
@@ -121,3 +121,67 @@ export const getPublicPolicyCollectionRef = () => {
 // Re-exporta tipos importantes (opcional)
 export type PolicyDocument = DocumentData;
 export type PoliciesSnapshot = QuerySnapshot<DocumentData>;
+
+// -------------------------------------------------------------
+// HELPERS DE ALTA NÍVEL (saveDraft, loadDraft, savePolicy, getPoliciesHistory, deleteDocument)
+// -------------------------------------------------------------
+
+/** Salva um rascunho na coleção privada do usuário. */
+export async function saveDraft(userId: string, data: any) {
+    if (!db) throw new Error('Firestore não inicializado.');
+    const colRef = getPrivatePolicyCollectionRef(userId);
+    const docRef = await addDoc(colRef, {
+        type: 'draft',
+        data,
+        createdAt: serverTimestamp(),
+    });
+    return docRef.id;
+}
+
+/** Carrega o rascunho mais recente do usuário (se houver). */
+export async function loadDraft(userId: string): Promise<{ id: string; data?: any; type?: string; createdAt?: any } | null> {
+    if (!db) return null;
+    const colRef = getPrivatePolicyCollectionRef(userId);
+    const q = query(colRef, where('type', '==', 'draft'), orderBy('createdAt', 'desc'), limit(1 as number));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    const docData = doc.data();
+    // Normalize the returned shape so callers can rely on `data` property
+    return {
+        id: doc.id,
+        data: docData.data,
+        type: docData.type,
+        createdAt: docData.createdAt,
+    };
+}
+
+/** Salva uma política final na coleção privada do usuário. */
+export async function savePolicy(userId: string, payload: any) {
+    if (!db) throw new Error('Firestore não inicializado.');
+    const colRef = getPrivatePolicyCollectionRef(userId);
+    const docRef = await addDoc(colRef, {
+        type: 'policy',
+        data: payload,
+        policyContent: payload.policyContent || '',
+        generatedAt: payload.generatedAt || new Date().toISOString(),
+        createdAt: serverTimestamp(),
+    });
+    return docRef.id;
+}
+
+/** Retorna o histórico de documentos (rascunhos + políticas) do usuário. */
+export async function getPoliciesHistory(userId: string) {
+    if (!db) return [];
+    const colRef = getPrivatePolicyCollectionRef(userId);
+    const q = query(colRef, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/** Deleta um documento do usuário (rascunho ou política). */
+export async function deleteDocument(userId: string, docId: string) {
+    if (!db) throw new Error('Firestore não inicializado.');
+    const docRef = getPrivatePolicyDocRef(userId, docId);
+    await deleteDoc(docRef);
+}

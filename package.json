@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@google/genai": "^1.29.0",
+    "@google/genai": "^1.29.1",
     "@next/third-parties": "^16.0.1",
     "@stripe/stripe-js": "^8.3.0",
     "firebase": "^12.5.0",

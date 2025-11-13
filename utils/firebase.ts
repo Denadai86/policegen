@@ -120,4 +120,34 @@ export const getPublicPolicyCollectionRef = () => {
 
 // Re-exporta tipos importantes (opcional)
 export type PolicyDocument = DocumentData;
-export type PoliciesSnapshot = QuerySnapshot<DocumentData>;
+export type PoliciesSnapshot = QuerySnapshot<DocumentData>; 
+
+// -------------------------------------------------------------
+// HOOK SIMPLES DE AUTENTICAÇÃO (useAuth)
+// Retorna { user, loading } e utiliza authenticateUser() como fonte.
+// Útil para componentes React que precisam de um estado simples de usuário.
+// -------------------------------------------------------------
+import { useEffect, useState } from 'react';
+
+export function useAuth() {
+    const [user, setUser] = useState<{ uid: string } | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const uid = await authenticateUser();
+                if (mounted) setUser(uid ? { uid } as any : null);
+            } catch (e) {
+                console.error('Erro em useAuth:', e);
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        })();
+
+        return () => { mounted = false; };
+    }, []);
+
+    return { user, loading };
+}
