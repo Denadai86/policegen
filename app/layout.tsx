@@ -67,9 +67,9 @@ export default function RootLayout({
         {/* HEADER */}
         <header className="sticky top-0 z-50 bg-white shadow-md p-4">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <span className="text-xl font-bold text-indigo-600">Seu Logo</span>
+            <span className="text-xl font-bold text-indigo-600">AçãoLeve</span>
             <nav>
-              <a href="#" className="text-gray-600 hover:text-indigo-600 mx-3 transition-colors">Home</a>
+              <a href="acaoleve.com" className="text-gray-600 hover:text-indigo-600 mx-3 transition-colors">Home</a>
               <a href="#" className="text-gray-600 hover:text-indigo-600 mx-3 transition-colors">Sobre</a>
               <a href="#" className="text-gray-600 hover:text-indigo-600 mx-3 transition-colors">Contato</a>
             </nav>
