@@ -72,10 +72,12 @@ export default function RootLayout({
               <span className="text-xl font-semibold">AçãoLeve</span>
             </a>
 
-            <nav>
+            <nav className="flex items-center">
               <a href="https://acaoleve.com" className="text-white hover:text-indigo-200 mx-3 transition-colors text-sm font-medium">Home</a>
+              <a href="/#steps" className="text-white/90 hover:text-indigo-200 mx-3 transition-colors text-sm">Etapas</a>
               <a href="#" className="text-white/90 hover:text-indigo-200 mx-3 transition-colors text-sm">Sobre</a>
               <a href="#" className="text-white/90 hover:text-indigo-200 mx-3 transition-colors text-sm">Contato</a>
+              <a href="/#steps" className="ml-4 inline-flex items-center px-3 py-1.5 bg-white/10 border border-white/20 rounded-md text-sm font-medium text-white hover:bg-white/20 transition">Ver Etapas</a>
             </nav>
           </div>
         </header>

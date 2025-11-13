@@ -444,7 +444,7 @@ export default function PolicyGenPage() {
             <main className="w-full max-w-4xl bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl">
                 
                 {/* Indicador de Passo (Mantido) */}
-                <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+                <div id="steps" className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
                     {/* ... (Renderização dos passos mantida) ... */}
                 </div>
 
