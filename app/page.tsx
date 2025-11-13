@@ -24,24 +24,24 @@ import {
 } from 'lucide-react';
 
 // Importação da tipagem e funções utilitárias do FORM
-import type { FormData, PolicyDocument } from '@/utils/generatePolicy'; // Adicionado PolicyDocument
+import type { FormData, PolicyDocument } from '../utils/generatePolicy'; // Adicionado PolicyDocument
 import { 
     languageOptions, 
     idiomOptions, 
     getIdiomaLabel,
     jurisdictionOptions, 
     getJurisdicaoLabel
-} from '@/utils/generatePolicy';
+} from '../utils/generatePolicy';
 
 // Importação das funções e hooks do FIREBASE/FIRESTORE
-import { useAuth } from '@/utils/firebase'; // Hook para autenticação
+import { useAuth } from '../utils/firebase'; // Hook para autenticação
 import { 
     loadDraft,
     saveDraft,
     savePolicy,
     getPoliciesHistory,
     deleteDocument
-} from '@/utils/firestore'; // Funções do Firestore
+} from '../utils/firestore'; // Funções do Firestore
 
 // --- UTILITY: HOOK DE DEBOUNCE PARA SALVAR DRAFT ---
 // Implementação simples de um hook de debounce
