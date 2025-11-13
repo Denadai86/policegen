@@ -121,6 +121,9 @@ export default function PolicyGenPage() {
     const [history, setHistory] = useState<PolicyDocument[]>([]);
     const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
 
+    // Validação local para campos obrigatórios (Passo 3)
+    const requiredMissing = (!formData.nomeDoProjeto || !formData.nomeDoResponsavel);
+
     // --- FUNÇÕES DE LÓGICA DO FIRESTORE ---
 
     const fetchHistory = useCallback(async (uid: string) => {
@@ -241,20 +244,43 @@ export default function PolicyGenPage() {
     // nextStep, prevStep, handleFormChange...
 
     const nextStep = () => {
-        if (step < STEPS.length) {
-            setStep(step + 1);
-            if(policy && step < STEPS.length - 1) { 
-                setPolicy('');
-            }
-            setError(null); 
-        }
+        // usa goToStep para navegação com validação e smooth scroll
+        if (step < STEPS.length) goToStep(step + 1);
     };
 
     const prevStep = () => {
-        if (step > 1) {
-            setStep(step - 1);
-            setError(null); 
+        if (step > 1) goToStep(step - 1);
+    };
+
+    // Helper: navega para um passo com validação e smooth scroll/foco
+    const goToStep = (n: number) => {
+        // Validação específica: não permitir avançar do passo 3 sem nome do projeto e responsável
+        if (step === 3 && n > 3) {
+            if (!formData.nomeDoProjeto || !formData.nomeDoResponsavel) {
+                setError('Preencha Nome do Projeto e Nome do Responsável antes de prosseguir.');
+                // força ir para passo 3 se por alguma razão não estivermos
+                setStep(3);
+                return;
+            }
         }
+
+        setError(null);
+        setStep(n);
+        // limpa policy se estiver gerado e voltando para etapas intermediárias
+        if (policy && n < STEPS.length - 1) setPolicy('');
+
+        // after a short delay (allow DOM to render the new step), scroll and focus
+        setTimeout(() => {
+            const el = document.getElementById(`step-content-${n}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // foca o primeiro campo interativo dentro do passo
+                const focusEl = el.querySelector('input, select, textarea, button') as HTMLElement | null;
+                if (focusEl && typeof focusEl.focus === 'function') {
+                    focusEl.focus();
+                }
+            }
+        }, 80);
     };
 
     const handleFormChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -350,12 +376,135 @@ export default function PolicyGenPage() {
                         </div>
                     </div>
                 );
-            case 2: // Uso do Serviço (Conteúdo mantido)
-            case 3: // Identificação (Conteúdo mantido)
-            case 4: // Dados e Tech (Conteúdo mantido)
-            case 5: // Legais e Escopo (Conteúdo mantido)
-                // Colocar o código dos casos 2 a 5 aqui (omitido para brevidade)
-                return null; // Substituir por renderização real
+            case 2: // Uso do Serviço
+                return (
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-300">Configurações do modelo de negócio e monetização do seu projeto.</p>
+
+                        <label className="block">
+                            <span className="text-sm text-gray-400">Modelo de Software</span>
+                            <select name="modeloSoftware" value={formData.modeloSoftware} onChange={handleFormChange} className="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white">
+                                <option value="SAAS">SaaS</option>
+                                <option value="ON_PREM">On-Premise</option>
+                                <option value="MOBILE">Mobile App</option>
+                                <option value="OUTRO">Outro</option>
+                            </select>
+                        </label>
+
+                        <label className="block">
+                            <span className="text-sm text-gray-400">Tipo de Monetização</span>
+                            <select name="tipoMonetizacao" value={formData.tipoMonetizacao} onChange={handleFormChange} className="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white">
+                                <option value="FREEMIUM">Freemium</option>
+                                <option value="SUBSCRIPTION">Assinatura</option>
+                                <option value="PAID">Pago (Licença)</option>
+                                <option value="AD">Publicidade</option>
+                            </select>
+                        </label>
+
+                        <label className="block">
+                            <span className="text-sm text-gray-400">Licença / Código</span>
+                            <input name="licencaCodigo" value={formData.licencaCodigo} onChange={handleFormChange} className="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" />
+                        </label>
+                    </div>
+                );
+
+            case 3: // Identificação
+                return (
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-300">Identifique o projeto e o responsável legal.</p>
+
+                        <label className="block">
+                            <span className="text-sm text-gray-400">Nome do Projeto <span className="text-red-400">*</span></span>
+                            <input
+                                name="nomeDoProjeto"
+                                value={formData.nomeDoProjeto}
+                                onChange={handleFormChange}
+                                aria-required="true"
+                                required
+                                className={`mt-1 block w-full bg-gray-900 border ${step === 3 && !formData.nomeDoProjeto ? 'border-red-500' : 'border-gray-700'} rounded-md p-2 text-white`}
+                            />
+                        </label>
+
+                        <label className="block">
+                            <span className="text-sm text-gray-400">Nome do Responsável <span className="text-red-400">*</span></span>
+                            <input
+                                name="nomeDoResponsavel"
+                                value={formData.nomeDoResponsavel}
+                                onChange={handleFormChange}
+                                aria-required="true"
+                                required
+                                className={`mt-1 block w-full bg-gray-900 border ${step === 3 && !formData.nomeDoResponsavel ? 'border-red-500' : 'border-gray-700'} rounded-md p-2 text-white`}
+                            />
+                        </label>
+
+                        <label className="block">
+                            <span className="text-sm text-gray-400">Contato do DPO / Encarregado</span>
+                            <input name="contatoDPO" value={formData.contatoDPO} onChange={handleFormChange} className="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" />
+                        </label>
+
+                        {/* Mensagem clara sobre obrigatoriedade quando faltar algo */}
+                        {step === 3 && requiredMissing && (
+                            <p className="text-sm text-red-400 mt-1">Preencha os campos obrigatórios marcados com <span className="font-semibold">*</span> antes de prosseguir.</p>
+                        )}
+                    </div>
+                );
+
+            case 4: // Dados e Tech
+                return (
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-300">Indique como seu serviço coleta e trata dados.</p>
+
+                        <label className="flex items-center space-x-3">
+                            <input type="checkbox" name="coletaDadosPessoais" checked={!!formData.coletaDadosPessoais} onChange={handleFormChange} className="h-4 w-4" />
+                            <span className="text-sm text-gray-300">Coleta dados pessoais</span>
+                        </label>
+
+                        <label className="flex items-center space-x-3">
+                            <input type="checkbox" name="coletaDadosSensivel" checked={!!formData.coletaDadosSensivel} onChange={handleFormChange} className="h-4 w-4" />
+                            <span className="text-sm text-gray-300">Coleta dados sensíveis</span>
+                        </label>
+
+                        <label className="block">
+                            <span className="text-sm text-gray-400">Objetivo da coleta</span>
+                            <textarea name="objetivoDaColeta" value={formData.objetivoDaColeta} onChange={handleFormChange} rows={4} className="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" />
+                        </label>
+
+                        <label className="block">
+                            <span className="text-sm text-gray-400">Países de transferência (se aplicável)</span>
+                            <input name="paisesTransferencia" value={formData.paisesTransferencia} onChange={handleFormChange} className="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" />
+                        </label>
+                    </div>
+                );
+
+            case 5: // Legais e Escopo
+                return (
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-300">Configurações legais e idioma de saída do documento.</p>
+
+                        <label className="block">
+                            <span className="text-sm text-gray-400">Jurisdicação</span>
+                            <select name="jurisdicao" value={formData.jurisdicao} onChange={handleFormChange} className="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white">
+                                {jurisdictionOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                        </label>
+
+                        <label className="block">
+                            <span className="text-sm text-gray-400">Idioma do Documento</span>
+                            <select name="idiomaDoDocumento" value={formData.idiomaDoDocumento} onChange={handleFormChange} className="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white">
+                                {idiomOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                        </label>
+
+                        <label className="flex items-center space-x-3">
+                            <input type="checkbox" name="incluirNaoGarantia" checked={!!formData.incluirNaoGarantia} onChange={handleFormChange} className="h-4 w-4" />
+                            <span className="text-sm text-gray-300">Incluir cláusula de não garantia (AS IS)</span>
+                        </label>
+                    </div>
+                );
             case 6: // Revisão e Geração ⭐️ NOVO PONTO DE CHAMADA DA API + HISTÓRICO
                 return (
                     <div className="space-y-8">
@@ -499,7 +648,9 @@ export default function PolicyGenPage() {
 
                 {/* Conteúdo do Passo (Mantido) */}
                 <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
-                    {renderStepContent}
+                    <div id={`step-content-${step}`} data-step={step} className="space-y-6">
+                        {renderStepContent}
+                    </div>
 
                     {/* Botões de Navegação */}
                     <div className="flex justify-between border-t border-gray-700 pt-4 mt-8">
@@ -520,7 +671,9 @@ export default function PolicyGenPage() {
                                 <button
                                     type="button"
                                     onClick={nextStep}
-                                    className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-md transition"
+                                    disabled={step === 3 && requiredMissing}
+                                    title={step === 3 && requiredMissing ? 'Preencha os campos obrigatórios antes de prosseguir' : undefined}
+                                    className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Próximo
                                     <ArrowRight className="ml-2 h-4 w-4" />

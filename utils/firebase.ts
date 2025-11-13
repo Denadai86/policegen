@@ -6,23 +6,47 @@ import { getFirestore, Firestore, setLogLevel, doc, collection, query, where, ge
 setLogLevel('debug');
 
 // Variáveis Globais (fornecidas pelo ambiente Canvas/Vercel)
-declare const __app_id: string;
-declare const __firebase_config: string;
-declare const __initial_auth_token: string;
+declare const __app_id: string | undefined;
+declare const __firebase_config: string | undefined;
+declare const __initial_auth_token: string | undefined;
 
-// Configuração do Firebase (parseada da variável global)
-const firebaseConfig = typeof __firebase_config !== 'undefined' 
-    ? JSON.parse(__firebase_config) 
-    : {};
+// Configuração do Firebase (tenta múltiplas fontes: variável global do ambiente,
+// variável NEXT_PUBLIC_FIREBASE_CONFIG (JSON) ou variáveis NEXT_PUBLIC individuais)
+let firebaseConfig: any = {};
+try {
+    if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        firebaseConfig = JSON.parse(__firebase_config);
+    } else if (typeof window !== 'undefined' && (window as any).__firebase_config) {
+        firebaseConfig = JSON.parse((window as any).__firebase_config);
+    } else if (process.env.NEXT_PUBLIC_FIREBASE_CONFIG) {
+        firebaseConfig = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
+    } else if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+        // Fallback: montar a config a partir de variáveis públicas individuais
+        firebaseConfig = {
+            apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+            authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+            storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+            messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+            appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+        };
+    }
+} catch (e) {
+    console.error('Erro ao parsear configuração do Firebase:', e);
+    firebaseConfig = {};
+}
 
 // Inicializa o Firebase, mas apenas se houver uma configuração válida
 let firebaseApp = null;
-if (Object.keys(firebaseConfig).length > 0) {
+if (firebaseConfig && Object.keys(firebaseConfig).length > 0) {
     try {
         firebaseApp = initializeApp(firebaseConfig);
     } catch (e) {
         console.error("Erro ao inicializar o Firebase App:", e);
     }
+} else {
+    // Não temos configuração válida — informar no console (útil em dev local sem .env)
+    console.warn('Firebase config não encontrada. Inicialização do Firebase foi ignorada. Verifique .env.local ou NEXT_PUBLIC_* variables.');
 }
 
 // -------------------------------------------------------------
