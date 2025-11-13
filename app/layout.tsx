@@ -63,15 +63,19 @@ export default function RootLayout({
 
       {/* Estrutura de corpo */}
       <body className="antialiased min-h-screen flex flex-col bg-gray-50 text-gray-900">
-        
-        {/* HEADER */}
-        <header className="sticky top-0 z-50 bg-white shadow-md p-4">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <span className="text-xl font-bold text-indigo-600">AçãoLeve</span>
+
+        {/* HEADER - estilizado para combinar com o resto do site */}
+        <header className="sticky top-0 z-50 bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
+          <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
+            <a href="https://acaoleve.com" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3">
+              <span className="inline-block w-8 h-8 rounded-md bg-white/20 flex items-center justify-center text-white font-bold">AL</span>
+              <span className="text-xl font-semibold">AçãoLeve</span>
+            </a>
+
             <nav>
-              <a href="acaoleve.com" className="text-gray-600 hover:text-indigo-600 mx-3 transition-colors">Home</a>
-              <a href="#" className="text-gray-600 hover:text-indigo-600 mx-3 transition-colors">Sobre</a>
-              <a href="#" className="text-gray-600 hover:text-indigo-600 mx-3 transition-colors">Contato</a>
+              <a href="https://acaoleve.com" className="text-white hover:text-indigo-200 mx-3 transition-colors text-sm font-medium">Home</a>
+              <a href="#" className="text-white/90 hover:text-indigo-200 mx-3 transition-colors text-sm">Sobre</a>
+              <a href="#" className="text-white/90 hover:text-indigo-200 mx-3 transition-colors text-sm">Contato</a>
             </nav>
           </div>
         </header>
@@ -80,7 +84,7 @@ export default function RootLayout({
         <main className="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
           {children}
         </main>
-        
+
         {/* FOOTER */}
         <footer className="bg-gray-800 text-white p-6 mt-8">
           <div className="max-w-7xl mx-auto text-center text-sm">
@@ -90,9 +94,6 @@ export default function RootLayout({
         </footer>
 
       </body>
-      
-  {/* Google Analytics removido temporariamente para evitar dependência faltante em tempo de build */}
-
     </html>
   );
 }
